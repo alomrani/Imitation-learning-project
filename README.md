@@ -20,7 +20,7 @@ The project aims to solve/build a single research idea by balancing its theory w
 * [Dyna: Model-based Planning Combined with Model-Free Learning](http://incompleteideas.net/book/RLbook2020.pdf)
 * [Maxmin Q-Learning: Controlling The Estimation Bias Of Q-Learning](https://arxiv.org/pdf/2002.06487.pdf)
 
-<!-- ## Tentative Schedule
+## Tentative Schedule
 
 |Week|Task|Description|Completed|
 |:--:|:--:|:---------:|:-------:|
@@ -35,5 +35,5 @@ The project aims to solve/build a single research idea by balancing its theory w
 |10|Write Report|Draft and finalize report| - |
 |11|Wrap Project|Package code base and wrap ppt| - |
 
- -->
+
 
