@@ -6,7 +6,13 @@ The project aims to solve/build a single research idea by balancing its theory w
 
 ### Multi-Agent Path Finding
 * [Lifelong Multi-Agent Path Finding in A Dynamic Environment](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8581181)
-* Other papers by Reza  
+* [PRIMAL: Pathfinding via Reinforcement and Imitation Multi-Agent Learning](https://arxiv.org/pdf/1809.03531.pdf)
+* [PRIMAL2: Pathfinding via Reinforcement and Imitation Multi-Agent Learning - Lifelong](https://arxiv.org/pdf/2010.08184.pdf)
+* [Graph Neural Networks for Decentralized Multi-Robot Path Planning](https://arxiv.org/pdf/1912.06095.pdf)
+
+### Other Similar problems/ GNN Approaches 
+* [Learning Attentional Communication for Multi-Agent Cooperation](https://arxiv.org/pdf/1805.07733.pdf)
+* [Multi-Agent Routing Value Iteration Network](https://arxiv.org/pdf/2007.05096.pdf)
 
 ### Deep Reinforcement Learning for Robot Control
 * [C-Learning: Learning To Achieve Goals Via Recursive Classification](https://arxiv.org/pdf/2011.08909.pdf) 
