@@ -26,6 +26,9 @@ The project aims to solve/build a single research idea by balancing its theory w
 * [Dyna: Model-based Planning Combined with Model-Free Learning](http://incompleteideas.net/book/RLbook2020.pdf)
 * [Maxmin Q-Learning: Controlling The Estimation Bias Of Q-Learning](https://arxiv.org/pdf/2002.06487.pdf)
 
+### Self Driving Cars
+* [learning by cheating](https://arxiv.org/pdf/1912.12294.pdf)
+
 ## Tentative Schedule
 
 |Week|Task|Description|Completed|
