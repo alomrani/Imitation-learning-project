@@ -1,5 +1,11 @@
 ## Imitation-learning-project
 
+## Tasks for this week
+- [ ] Read 2 papers of your choice
+- [ ] Go through the code base
+- [ ] Apply code on 1 small task (without needing GPU)
+- [ ] Meet with prof
+
 ## General Outline
 The project aims to solve/build a single research idea by balancing its theory with empirical evaluation. We hope to begin by gaining intuition about the problem and addressing it on a simple toy task. The method can then be extended to non-trivial robot control tasks in order to compare its efficacy with baseline algorithms. 
 
@@ -14,18 +20,24 @@ The project aims to solve/build a single research idea by balancing its theory w
 * [Learning Attentional Communication for Multi-Agent Cooperation](https://arxiv.org/pdf/1805.07733.pdf)
 * [Multi-Agent Routing Value Iteration Network](https://arxiv.org/pdf/2007.05096.pdf) -->
 
-### Self Driving Cars
-* [learning by cheating](https://arxiv.org/pdf/1912.12294.pdf)
-
-### Paper List
-I guess we can pick 2 papers to read by entering our name in the `Name` column. Tasks include the following-
+## Paper List
+I guess we can pick 2 papers to read by entering our name in the `Name` column. The list consists of basic papers which will help you get started on RL. In case you have any other papers you are interested in then feel free to put it here. Tasks include the following-
 * Read papers completely
 * Study the code base
 * Run code on a smaller problem (potentially MDP)
 
 |Paper|Code Link|Name|Implementation Task|
 |:---:|:-------:|:--:|:-----------------:|
-||||
+|[SAC](https://arxiv.org/pdf/1801.01290.pdf)|[here](https://github.com/denisyarats/pytorch_sac)|-|-|
+|[DDPG](https://arxiv.org/pdf/1509.02971.pdf)|[here](https://github.com/sfujim/TD3)|-|-|
+|[TD3](https://arxiv.org/pdf/1802.09477.pdf)|[here](https://github.com/sfujim/TD3)|-|-|
+|[PPO](https://arxiv.org/pdf/1707.06347.pdf)|[here](https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail)|-|-|
+|[Learning by Cheating](https://arxiv.org/pdf/1912.12294.pdf)|[here](https://github.com/dotchen/LearningByCheating)|-|-|
+|[Eligibility Traces](https://web.stanford.edu/class/psych209/Readings/SuttonBartoIPRLBook2ndEd.pdf)|[here](https://github.com/ShangtongZhang/reinforcement-learning-an-introduction)|Karush|-|
+|[Dyna Planning](https://web.stanford.edu/class/psych209/Readings/SuttonBartoIPRLBook2ndEd.pdf)|[here](https://github.com/ShangtongZhang/reinforcement-learning-an-introduction)|-|-|
+|[A3C](https://arxiv.org/pdf/1602.01783.pdf)|[here](https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail)|-|-|
+
+A longer list of papers is available [here](https://csc2541-f18.github.io/).
 
 ## Distribution of Tasks
 As discussed, we can all pick one algorithm to implement and improve on a small task. In case our improvements work, we will apply these on new tasks and finalise results. Upon completion we will package our code base and distribute duties for report and presentation.
