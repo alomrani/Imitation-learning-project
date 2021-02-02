@@ -32,7 +32,7 @@ I guess we can pick 2 papers to read by entering our name in the `Name` column. 
 |[DDPG](https://arxiv.org/pdf/1509.02971.pdf)|[here](https://github.com/sfujim/TD3)|-|-|
 |[TD3](https://arxiv.org/pdf/1802.09477.pdf)|[here](https://github.com/sfujim/TD3)|-|-|
 |[PPO](https://arxiv.org/pdf/1707.06347.pdf)|[here](https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail)|-|-|
-|[Learning by Cheating](https://arxiv.org/pdf/1912.12294.pdf)|[here](https://github.com/dotchen/LearningByCheating)|-|-|
+|[Learning by Cheating](https://arxiv.org/pdf/1912.12294.pdf)|[here](https://github.com/dotchen/LearningByCheating)|Reza|-|
 |[Eligibility Traces](https://web.stanford.edu/class/psych209/Readings/SuttonBartoIPRLBook2ndEd.pdf)|[here](https://github.com/ShangtongZhang/reinforcement-learning-an-introduction)|Karush|-|
 |[Dyna Planning](https://web.stanford.edu/class/psych209/Readings/SuttonBartoIPRLBook2ndEd.pdf)|[here](https://github.com/ShangtongZhang/reinforcement-learning-an-introduction)|Reza|-|
 |[A3C](https://arxiv.org/pdf/1602.01783.pdf)|[here](https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail)|-|-|
