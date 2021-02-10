@@ -25,7 +25,7 @@ As discussed, we can all pick one algorithm to implement and improve on a small 
 |:--:|:--:|:---------:|:-------:|
 |1|Literature Review|Brainstorm Ideas and jot down good ones|:heavy_check_mark:|
 |2|Literature Review|Brainstorm Ideas, Meet with prof|:heavy_check_mark:|
-|3|Formulate Problem|Setup the problem with potential solutions|start brainstorming solutions|
+|3|Formulate Problem|Setup the problem with potential solutions|:heavy_check_mark:|
 |4|Implement Toy Problem|Solve base case and gain intuition| - |
 |5|Implement Toy Problem|Complete base case solution and interpret results| - |
 |6|Implement Algorithm|Solve main problem| - |
