@@ -2,7 +2,7 @@
 
 ## Updates
 
-*Feb 18*- [`IL code base`](IL-base/IL-base) is available. Refer to README and start programming.  
+*Feb 18*- [`IL code base`](IL-base/) is available. Refer to README and start programming.  
 *Feb 16*- Proposal is complete. Midterm report due March 10.  
 
 ## General Outline
