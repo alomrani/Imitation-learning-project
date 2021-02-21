@@ -3,13 +3,73 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import torch.autograd as autograd
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Implementation of Deep Deterministic Policy Gradients (DDPG)
 # Paper: https://arxiv.org/abs/1509.02971
 # [Not the implementation used in the TD3 paper]
+
+
+class ActorCNN(nn.Module):
+    def __init__(self, state_dim, action_dim, max_action):
+        super(ActorCNN, self).__init__()
+        self.state_dim = state_dim
+		self.action_dim = action_dim   
+        self.features = nn.Sequential(
+            nn.Conv2d(state_dim[0], 32, kernel_size=8, stride=4),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1),
+            nn.ReLU()
+        )       
+        self.fc = nn.Sequential(
+            nn.Linear(self.feature_size(), 512),
+            nn.ReLU(),
+            nn.Linear(512, action_dim)
+        )
+		self.max_action = max_action
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc(x)
+        return self.max_action * torch.tanh(x)
+    
+	def feature_size(self):
+        return self.features(autograd.Variable(torch.zeros(1, *self.state_dim))).view(1, -1).size(1)    
+
+
+class CriticCNN(nn.Module):
+    def __init__(self, state_dim, action_dim):
+        super(CriticCNN, self).__init__()
+        self.state_dim = state_dim
+		self.action_dim = action_dim   
+        self.features = nn.Sequential(
+            nn.Conv2d(state_dim[0], 32, kernel_size=8, stride=4),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1),
+            nn.ReLU()
+        )       
+        self.fc = nn.Sequential(
+            nn.Linear(self.feature_size(), 512),
+            nn.ReLU(),
+            nn.Linear(512, 1)
+        )
+        
+    def forward(self, x, action):
+        x = self.features(x)
+        x = x.view(x.size(0), -1)
+		x = torch.cat([x, action], axis=0)
+        x = self.fc(x)
+        return F.relu(x)
+    
+	def feature_size(self):
+        return self.features(autograd.Variable(torch.zeros(1, *self.state_dim))).view(1, -1).size(1)    
 
 
 class Actor(nn.Module):
@@ -45,12 +105,17 @@ class Critic(nn.Module):
 
 
 class DDPG(object):
-	def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.001, policy_noise=0.2, noise_clip=0.5,policy_freq=1):
-		self.actor = Actor(state_dim, action_dim, max_action).to(device)
+	def __init__(self, args, state_dim, action_dim, max_action, discount=0.99, tau=0.001, policy_noise=0.2, noise_clip=0.5,policy_freq=1):
+		self.args = args
+		if args.obs==ObservationType.KIN:
+			self.actor = Actor(state_dim, action_dim, max_action).to(device)
+			self.critic = Critic(state_dim, action_dim).to(device)
+		else:
+			self.actor = ActorCNN(state_dim, action_dim, max_action).to(device)
+			self.critic = CriticCNN(state_dim, action_dim).to(device)
 		self.actor_target = copy.deepcopy(self.actor)
 		self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=1e-4)
 
-		self.critic = Critic(state_dim, action_dim).to(device)
 		self.critic_target = copy.deepcopy(self.critic)
 		self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), weight_decay=1e-2)
 

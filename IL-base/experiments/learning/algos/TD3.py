@@ -68,6 +68,7 @@ class Critic(nn.Module):
 class TD3(object):
 	def __init__(
 		self,
+		args, 
 		state_dim,
 		action_dim,
 		max_action,
@@ -78,7 +79,11 @@ class TD3(object):
 		policy_freq=2
 	):
 
-		self.actor = Actor(state_dim, action_dim, max_action).to(device)
+		self.args = args
+		if args.obs==ObservationType.KIN:
+			self.actor = Actor(state_dim, action_dim, max_action).to(device)
+		else:
+			self.actor = ActorCNN(state_dim, action_dim, max_action).to(device)
 		self.actor_target = copy.deepcopy(self.actor)
 		self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
 

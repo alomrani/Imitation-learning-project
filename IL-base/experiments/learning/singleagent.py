@@ -132,6 +132,7 @@ if __name__ == "__main__":
     max_action = float(train_env.action_space.high[0])
 
     kwargs = {
+        "args": ARGS, 
         "state_dim": state_dim,
         "action_dim": action_dim,
         "max_action": max_action,
