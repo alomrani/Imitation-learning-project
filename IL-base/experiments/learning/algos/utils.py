@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-
+import matplotlib.pyplot as plt
 
 class ReplayBuffer(object):
 	def __init__(self, state_dim, action_dim, max_size=int(1e6)):
@@ -61,4 +61,63 @@ def args_type(default):
     return x
   return lambda x: parse_string(x) if isinstance(x, str) else parse_object(x)
 
-  
+
+def save_logs(filename, log_dir):
+    with open(filename+'logs.csv', 'w') as csv_file:
+        writer = csv.writer(csv_file)
+        for key, value in log_dir.items():
+            writer.writerow([key, value])
+
+class Logger():
+	def __init__(self, args):
+		self.ARGS = args
+		self.log = {}
+		self.log['rewards'] = []
+		self.log['average_rewards'] = []
+		self.log['actor_loss'] = []
+		self.log['critic_loss'] = []
+		self.log['average_actor_loss'] = []
+		self.log['average_critic_loss'] = []
+
+	def log_episode(self, reward):
+		self.log['rewards'].append(reward)
+
+	def log(self):
+		if len(self.log['rewards'] > ARGS.window_size):
+			self.log['average_rewards'].append(np.mean(self.log['rewards'][-ARGS.window_size:]))
+			self.log['average_actor_loss'].append(np.mean(self.log['actor_loss'][-ARGS.window_size:]))
+			self.log['average_critic_loss'].append(np.mean(self.log['critic_loss'][-ARGS.window_size:]))
+
+	def res_plot(self):
+		# plot rewards
+		plt.figure()
+		plt.title('Average Returns', fontsize=24)
+		plt.plot(self.log['average_rewards'])
+		plt.xlabel('Steps', fontsize=18)
+		plt.ylabel('Returns', fontsize=18)
+		plt.savefig(filename+'/plot_rewards.png', dpi=600, bbox_inches='tight')
+		# plot actor loss
+		plt.figure()
+		plt.title('Average Actor Loss', fontsize=24)
+		plt.plot(self.log['average_actor_loss'])
+		plt.xlabel('Steps', fontsize=18)
+		plt.ylabel('Loss', fontsize=18)
+		plt.savefig(filename+'/plot_actor_loss.png', dpi=600, bbox_inches='tight')
+		# plot critic loss
+		plt.figure()
+		plt.title('Average Critic Loss', fontsize=24)
+		plt.plot(self.log['average_critic_loss'])
+		plt.xlabel('Steps', fontsize=18)
+		plt.ylabel('Loss', fontsize=18)
+		plt.savefig(filename+'/plot_critic_loss.png', dpi=600, bbox_inches='tight')
+
+	def save_logs(self):
+		with open(filename+'/logs.csv', 'w') as csv_file:
+			writer = csv.writer(csv_file)
+			for key, value in self.log.items():
+				writer.writerow([key, value])
+
+
+
+
+

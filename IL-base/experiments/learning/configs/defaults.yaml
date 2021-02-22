@@ -19,7 +19,7 @@ noise_clip: 0.5 # Range to clip target policy noise
 policy_freq: 2 # Frequency of delayed policy updates
 save_model: "store_true" # Save model and optimizer parameters
 load_model: "" # Model load file name, "" doesn't load, 
-
+window_size: 20 # average range for plottting
 
 
 

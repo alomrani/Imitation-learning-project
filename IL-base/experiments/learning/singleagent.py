@@ -77,6 +77,8 @@ if __name__ == "__main__":
 
     parser = build_parser()
     ARGS = parser.parse_args()
+    
+    logger = algos.utils.Logger(ARGS)
 
     #### Save directory ########################################
     filename = os.path.dirname(os.path.abspath(__file__))+'/results/save-'+ARGS.env+'-'+ARGS.algo+'-'+ARGS.obs.value+'-'+ARGS.act.value+'-'+datetime.now().strftime("%m.%d.%Y_%H.%M.%S")
@@ -191,6 +193,7 @@ if __name__ == "__main__":
             # +1 to account for 0 indexing. +0 on ep_timesteps since it will increment +1 even if done=True
             print(f"Total T: {t+1} Episode Num: {episode_num+1} Episode T: {episode_timesteps} Reward: {episode_reward}")
             # Reset environment
+            logger.log_episode(episode_reward)
             state, done = train_env.reset(), False
             episode_reward = 0
             episode_timesteps = 0
@@ -199,9 +202,11 @@ if __name__ == "__main__":
         # Evaluate episode
         if (t + 1) % ARGS.eval_freq == 0:
             evaluations.append(eval_policy(model, train_env, ARGS.seed))
-            np.save(filename, evaluations)
             if ARGS.save_model: model.save(filename)
+            logger.log()
 
+    logger.res_plot()
+    logger.save_logs()
 
 
 
