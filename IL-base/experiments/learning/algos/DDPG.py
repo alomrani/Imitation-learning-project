@@ -65,7 +65,7 @@ class CriticCNN(nn.Module):
 		x = x.view(x.size(0), -1)
 		x = torch.cat([x, action], axis=1)
 		x = self.fc(x)
-		return F.relu(x)
+		return x
     
 
 class Actor(nn.Module):

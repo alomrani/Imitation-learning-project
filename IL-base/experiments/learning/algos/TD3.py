@@ -67,10 +67,16 @@ class CriticCNN(nn.Module):
 		x = self.features(x.transpose(1,3))
 		x = x.view(x.size(0), -1)
 		sa = torch.cat([x, action], axis=1)
-		q1 = self.f1(sa)
-		q2 = self.f1(sa)
-		return F.relu(q1), F.relu(q2)
+		q1 = self.fc1(sa)
+		q2 = self.fc2(sa)
+		return q1, q2
 
+	def Q1(self, x, action):
+		x = self.features(x.transpose(1,3))
+		x = x.view(x.size(0), -1)
+		sa = torch.cat([x, action], axis=1)
+		q1 = self.fc1(sa)
+		return q1
 
 class Actor(nn.Module):
 	def __init__(self, state_dim, action_dim, max_action):
