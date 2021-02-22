@@ -133,7 +133,7 @@ def record_video(args, policy, eval_env, seed, shared_constants, filename):
 		state, reward, done, _ = eval_env.step(action)
 		im = Image.fromarray(state[0,:,:,0:2])
 		images.append(im.convert('P'))
-	images[0].save(filename+str(time.time())+'.gif', save_all=True, append_images=images[1:], optimize=False, duration=10, loop=0)
+	images[0].save(filename+'/'+str(time.time())+'-.gif', save_all=True, append_images=images[1:], optimize=False, duration=20, loop=0)
 
 
 
