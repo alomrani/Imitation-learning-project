@@ -113,7 +113,7 @@ class DDPG(object):
 		self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=1e-4)
 
 		self.critic_target = copy.deepcopy(self.critic)
-		self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=1e-4, weight_decay=1e-2)
+		self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), weight_decay=1e-2)
 
 		self.discount = discount
 		self.tau = tau
