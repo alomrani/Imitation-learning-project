@@ -13,6 +13,7 @@ import time
 from datetime import datetime
 import argparse
 import pathlib
+import copy
 import ruamel.yaml as yaml
 import subprocess
 import gym
@@ -23,7 +24,6 @@ from stable_baselines3.common.cmd_util import make_vec_env # Module cmd_util wil
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecTransposeImage
 import algos
 
-from gym.wrappers.monitoring.video_recorder import VideoRecorder
 from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
 from gym_pybullet_drones.envs.single_agent_rl.HoverAviary import HoverAviary
 from gym_pybullet_drones.envs.single_agent_rl.FlyThruGateAviary import FlyThruGateAviary
@@ -36,10 +36,9 @@ EPISODE_REWARD_THRESHOLD = -0 # Upperbound: rewards are always negative, but non
 """float: Reward threshold to halt the script."""
 
 
-def eval_policy(policy, train_env, seed, eval_episodes=10, record=False):
+def eval_policy(policy, train_env, seed, eval_episodes=5):
 	eval_env = train_env
 	eval_env.seed(seed + 100)
-	recorder = VideoRecorder(eval_env,filename+'/'+str(time.time())+'.mp4', enabled=True)
 	avg_reward = 0.
 	for _ in range(eval_episodes):
 		state, done = eval_env.reset(), False
@@ -47,10 +46,7 @@ def eval_policy(policy, train_env, seed, eval_episodes=10, record=False):
 			action = policy.select_action(np.array(state))
 			state, reward, done, _ = eval_env.step(action)
 			avg_reward += reward
-			if record:
-				algos.utils.record_video(eval_env, recorder)
 
-	recorder.close()
 	avg_reward /= eval_episodes
 
 	print("---------------------------------------")
@@ -191,13 +187,13 @@ if __name__ == "__main__":
 
         # Train agent after collecting sufficient data
         if t >= ARGS.start_timesteps:
-            model.train(replay_buffer, ARGS.batch_size)
+            actor_loss, critic_loss = model.train(replay_buffer, ARGS.batch_size)
 
         if done: 
             # +1 to account for 0 indexing. +0 on ep_timesteps since it will increment +1 even if done=True
             print(f"Total T: {t+1} Episode Num: {episode_num+1} Episode T: {episode_timesteps} Reward: {episode_reward}")
             # Reset environment
-            logger.log_episode(episode_reward)
+            logger.log_episode(episode_reward, actor_loss, critic_loss)
             state, done = train_env.reset(), False
             episode_reward = 0
             episode_timesteps = 0
@@ -205,10 +201,12 @@ if __name__ == "__main__":
 
         # Evaluate episode
         if (t + 1) % ARGS.eval_freq == 0:
-            record = True if (t+1) % 10*ARGS.eval_freq==0 else False
-            evaluations.append(eval_policy(model, train_env, ARGS.seed, record=record))
+            evaluations.append(eval_policy(model, train_env, ARGS.seed))
             if ARGS.save_model: model.save(filename)
             logger.log_data()
+        
+        if (t+1) % ARGS.record_freq == 0 and ARGS.obs==ObservationType.RGB:
+            algos.utils.record_video(ARGS, model, train_env, ARGS.seed, shared_constants, filename)
 
     logger.res_plot(filename)
     logger.save_logs(filename)

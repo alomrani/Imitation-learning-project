@@ -1,6 +1,9 @@
 import numpy as np
 import torch
 import time
+import csv
+import gym
+from PIL import Image
 import matplotlib.pyplot as plt
 
 class ReplayBuffer(object):
@@ -80,11 +83,13 @@ class Logger():
 		self.log['average_actor_loss'] = []
 		self.log['average_critic_loss'] = []
 
-	def log_episode(self, reward):
+	def log_episode(self, reward, actor_loss, critic_loss):
 		self.log['rewards'].append(reward)
+		self.log['actor_loss'].append(actor_loss)
+		self.log['critic_loss'].append(critic_loss)
 
 	def log_data(self):
-		if len(self.log['rewards'] > self.args.window_size):
+		if len(self.log['rewards']) > self.args.window_size:
 			self.log['average_rewards'].append(np.mean(self.log['rewards'][-self.args.window_size:]))
 			self.log['average_actor_loss'].append(np.mean(self.log['actor_loss'][-self.args.window_size:]))
 			self.log['average_critic_loss'].append(np.mean(self.log['critic_loss'][-self.args.window_size:]))
@@ -118,10 +123,17 @@ class Logger():
 			for key, value in self.log.items():
 				writer.writerow([key, value])
 	
-def record_video(env, recorder):
-	env.render()
-	recorder.capture_frame()
 
+def record_video(args, policy, eval_env, seed, shared_constants, filename):
+	eval_env.seed(seed + 100)
+	state, done = eval_env.reset(), False
+	images = []
+	while not done:
+		action = policy.select_action(np.array(state))
+		state, reward, done, _ = eval_env.step(action)
+		im = Image.fromarray(state[0,:,:,0:2])
+		images.append(im)
+	images[0].save(filename+str(time.time())+'.gif', save_all=True, append_images=images[1:], optimize=False, duration=10, loop=0)
 
 
 
