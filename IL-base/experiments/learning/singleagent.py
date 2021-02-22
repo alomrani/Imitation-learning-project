@@ -39,8 +39,7 @@ EPISODE_REWARD_THRESHOLD = -0 # Upperbound: rewards are always negative, but non
 def eval_policy(policy, train_env, seed, eval_episodes=10, record=False):
 	eval_env = train_env
 	eval_env.seed(seed + 100)
-    recorder = VideoRecorder(eval_env,filename+'/'+time.time()+'.mp4', enabled=True)
-
+	recorder = VideoRecorder(eval_env,filename+'/'+str(time.time())+'.mp4', enabled=True)
 	avg_reward = 0.
 	for _ in range(eval_episodes):
 		state, done = eval_env.reset(), False
@@ -48,9 +47,10 @@ def eval_policy(policy, train_env, seed, eval_episodes=10, record=False):
 			action = policy.select_action(np.array(state))
 			state, reward, done, _ = eval_env.step(action)
 			avg_reward += reward
-            algos.utils.record_video(eval_env, recorder)
+			if record:
+				algos.utils.record_video(eval_env, recorder)
 
-    recorder.close()
+	recorder.close()
 	avg_reward /= eval_episodes
 
 	print("---------------------------------------")
@@ -205,13 +205,13 @@ if __name__ == "__main__":
 
         # Evaluate episode
         if (t + 1) % ARGS.eval_freq == 0:
-            record = True if (t+1) % 50*eval_frequency==0 else False
+            record = True if (t+1) % 10*ARGS.eval_freq==0 else False
             evaluations.append(eval_policy(model, train_env, ARGS.seed, record=record))
             if ARGS.save_model: model.save(filename)
-            logger.log()
+            logger.log_data()
 
-    logger.res_plot()
-    logger.save_logs()
+    logger.res_plot(filename)
+    logger.save_logs(filename)
 
 
 

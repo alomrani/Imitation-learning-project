@@ -71,7 +71,7 @@ def save_logs(filename, log_dir):
 
 class Logger():
 	def __init__(self, args):
-		self.ARGS = args
+		self.args = args
 		self.log = {}
 		self.log['rewards'] = []
 		self.log['average_rewards'] = []
@@ -83,13 +83,13 @@ class Logger():
 	def log_episode(self, reward):
 		self.log['rewards'].append(reward)
 
-	def log(self):
-		if len(self.log['rewards'] > ARGS.window_size):
-			self.log['average_rewards'].append(np.mean(self.log['rewards'][-ARGS.window_size:]))
-			self.log['average_actor_loss'].append(np.mean(self.log['actor_loss'][-ARGS.window_size:]))
-			self.log['average_critic_loss'].append(np.mean(self.log['critic_loss'][-ARGS.window_size:]))
+	def log_data(self):
+		if len(self.log['rewards'] > self.args.window_size):
+			self.log['average_rewards'].append(np.mean(self.log['rewards'][-self.args.window_size:]))
+			self.log['average_actor_loss'].append(np.mean(self.log['actor_loss'][-self.args.window_size:]))
+			self.log['average_critic_loss'].append(np.mean(self.log['critic_loss'][-self.args.window_size:]))
 
-	def res_plot(self):
+	def res_plot(self, filename):
 		# plot rewards
 		plt.figure()
 		plt.title('Average Returns', fontsize=24)
@@ -112,7 +112,7 @@ class Logger():
 		plt.ylabel('Loss', fontsize=18)
 		plt.savefig(filename+'/plot_critic_loss.png', dpi=600, bbox_inches='tight')
 
-	def save_logs(self):
+	def save_logs(self, filename):
 		with open(filename+'/logs.csv', 'w') as csv_file:
 			writer = csv.writer(csv_file)
 			for key, value in self.log.items():
