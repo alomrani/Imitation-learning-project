@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import time
 import matplotlib.pyplot as plt
 
 class ReplayBuffer(object):
@@ -116,6 +117,11 @@ class Logger():
 			writer = csv.writer(csv_file)
 			for key, value in self.log.items():
 				writer.writerow([key, value])
+	
+def record_video(env, recorder):
+	env.render()
+	recorder.capture_frame()
+
 
 
 

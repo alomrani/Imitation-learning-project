@@ -23,6 +23,7 @@ from stable_baselines3.common.cmd_util import make_vec_env # Module cmd_util wil
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecTransposeImage
 import algos
 
+from gym.wrappers.monitoring.video_recorder import VideoRecorder
 from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
 from gym_pybullet_drones.envs.single_agent_rl.HoverAviary import HoverAviary
 from gym_pybullet_drones.envs.single_agent_rl.FlyThruGateAviary import FlyThruGateAviary
@@ -35,9 +36,10 @@ EPISODE_REWARD_THRESHOLD = -0 # Upperbound: rewards are always negative, but non
 """float: Reward threshold to halt the script."""
 
 
-def eval_policy(policy, train_env, seed, eval_episodes=10):
+def eval_policy(policy, train_env, seed, eval_episodes=10, record=False):
 	eval_env = train_env
 	eval_env.seed(seed + 100)
+    recorder = VideoRecorder(eval_env,filename+'/'+time.time()+'.mp4', enabled=True)
 
 	avg_reward = 0.
 	for _ in range(eval_episodes):
@@ -46,7 +48,9 @@ def eval_policy(policy, train_env, seed, eval_episodes=10):
 			action = policy.select_action(np.array(state))
 			state, reward, done, _ = eval_env.step(action)
 			avg_reward += reward
+            algos.utils.record_video(eval_env, recorder)
 
+    recorder.close()
 	avg_reward /= eval_episodes
 
 	print("---------------------------------------")
@@ -201,7 +205,8 @@ if __name__ == "__main__":
 
         # Evaluate episode
         if (t + 1) % ARGS.eval_freq == 0:
-            evaluations.append(eval_policy(model, train_env, ARGS.seed))
+            record = True if (t+1) % 50*eval_frequency==0 else False
+            evaluations.append(eval_policy(model, train_env, ARGS.seed, record=record))
             if ARGS.save_model: model.save(filename)
             logger.log()
 
