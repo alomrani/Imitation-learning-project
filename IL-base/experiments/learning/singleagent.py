@@ -159,6 +159,8 @@ if __name__ == "__main__":
 
     state, done = train_env.reset(), False
     episode_reward = 0
+    actor_loss = 0
+    critic_loss = 0
     episode_timesteps = 0
     episode_num = 0
 
@@ -186,7 +188,7 @@ if __name__ == "__main__":
         episode_reward += reward
 
         # Train agent after collecting sufficient data
-        if t >= ARGS.start_timesteps:
+        if t >= ARGS.start_timesteps and len(replay_buffer)>ARGS.batch_size:
             actor_loss, critic_loss = model.train(replay_buffer, ARGS.batch_size)
 
         if done: 
