@@ -52,7 +52,12 @@ class CriticCNN(nn.Module):
 			nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
 			nn.ReLU()
 		)
-		self.fc = nn.Sequential(
+		self.fc1 = nn.Sequential(
+			nn.Linear(512+self.action_dim, 256),
+			nn.ReLU(),
+			nn.Linear(256, 1)
+		)
+		self.fc2 = nn.Sequential(
 			nn.Linear(512+self.action_dim, 256),
 			nn.ReLU(),
 			nn.Linear(256, 1)
@@ -61,9 +66,10 @@ class CriticCNN(nn.Module):
 	def forward(self, x, action):
 		x = self.features(x.transpose(1,3))
 		x = x.view(x.size(0), -1)
-		x = torch.cat([x, action], axis=1)
-		x = self.fc(x)
-		return F.relu(x)
+		sa = torch.cat([x, action], axis=1)
+		q1 = self.f1(sa)
+		q2 = self.f1(sa)
+		return F.relu(q1), F.relu(q2)
 
 
 class Actor(nn.Module):
