@@ -14,7 +14,7 @@ expl_noise: 0.1 # Std of Gaussian exploration noise
 batch_size: 256 # Batch size for both actor and critic
 discount: 0.99 # Discount factor
 tau: 0.005 # Target network update rate
-policy_noise: 0.2 # Noise added to target policy
+policy_noise: 0.1 # Noise added to target policy
 noise_clip: 0.5 # Range to clip target policy noise
 policy_freq: 2 # Frequency of delayed policy updates
 save_model: "store_true" # Save model and optimizer parameters

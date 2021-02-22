@@ -164,6 +164,8 @@ class TD3(object):
 
 	def train(self, replay_buffer, batch_size=100):
 		self.total_it += 1
+		actor_loss = torch.FloatTensor([0])
+		critic_loss = torch.FloatTensor([0])
 
 		# Sample replay buffer 
 		state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
