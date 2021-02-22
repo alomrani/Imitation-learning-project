@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.autograd as autograd
+from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ObservationType
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -13,63 +14,59 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class ActorCNN(nn.Module):
-    def __init__(self, state_dim, action_dim, max_action):
-        super(ActorCNN, self).__init__()
-        self.state_dim = state_dim
-		self.action_dim = action_dim   
-        self.features = nn.Sequential(
-            nn.Conv2d(state_dim[0], 32, kernel_size=8, stride=4),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=4, stride=2),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1),
-            nn.ReLU()
-        )       
-        self.fc = nn.Sequential(
-            nn.Linear(self.feature_size(), 512),
-            nn.ReLU(),
-            nn.Linear(512, action_dim)
-        )
+	def __init__(self, state_dim, action_dim, max_action):
+		super(ActorCNN, self).__init__()
+		self.state_dim = state_dim
+		self.action_dim = action_dim
+		self.features = nn.Sequential(
+			nn.Conv2d(state_dim, 32, kernel_size=8, stride=4),
+			nn.ReLU(),
+			nn.Conv2d(32, 64, kernel_size=4, stride=2),
+			nn.ReLU(),
+			nn.Conv2d(64, 64, kernel_size=3, stride=1),
+			nn.ReLU()
+		)
+		self.fc = nn.Sequential(
+			nn.Linear(512, 512),
+			nn.ReLU(),
+			nn.Linear(512, action_dim)
+		)
 		self.max_action = max_action
-        
-    def forward(self, x):
-        x = self.features(x)
-        x = x.view(x.size(0), -1)
-        x = self.fc(x)
-        return self.max_action * torch.tanh(x)
+
+	def forward(self, x):
+		x = self.features(x.transpose(1,3))
+		x = x.view(x.size(0), -1)
+		x = self.fc(x)
+		return self.max_action * torch.tanh(x)
     
-	def feature_size(self):
-        return self.features(autograd.Variable(torch.zeros(1, *self.state_dim))).view(1, -1).size(1)    
 
 
 class CriticCNN(nn.Module):
-    def __init__(self, state_dim, action_dim):
-        super(CriticCNN, self).__init__()
-        self.state_dim = state_dim
-		self.action_dim = action_dim   
-        self.features = nn.Sequential(
-            nn.Conv2d(state_dim[0], 32, kernel_size=8, stride=4),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=4, stride=2),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1),
-            nn.ReLU()
-        )       
-        self.fc = nn.Sequential(
-            nn.Linear(self.feature_size(), 512),
-            nn.ReLU(),
-            nn.Linear(512, 1)
-        )
+	def __init__(self, state_dim, action_dim):
+		super(CriticCNN, self).__init__()
+		self.state_dim = state_dim
+		self.action_dim = action_dim
+		self.features = nn.Sequential(
+			nn.Conv2d(state_dim, 32, kernel_size=8, stride=4),
+			nn.ReLU(),
+			nn.Conv2d(32, 64, kernel_size=4, stride=2),
+			nn.ReLU(),
+			nn.Conv2d(64, 64, kernel_size=3, stride=1),
+			nn.ReLU()
+		)
+		self.fc = nn.Sequential(
+			nn.Linear(512, 512),
+			nn.ReLU(),
+			nn.Linear(512, 1)
+		)
         
-    def forward(self, x, action):
-        x = self.features(x)
-        x = x.view(x.size(0), -1)
+	def forward(self, x, action):
+		x = self.features(x.transpose(1,3))
+		x = x.view(x.size(0), -1)
 		x = torch.cat([x, action], axis=0)
-        x = self.fc(x)
-        return F.relu(x)
+		x = self.fc(x)
+		return F.relu(x)
     
-	def feature_size(self):
-        return self.features(autograd.Variable(torch.zeros(1, *self.state_dim))).view(1, -1).size(1)    
 
 
 class Actor(nn.Module):
@@ -124,7 +121,7 @@ class DDPG(object):
 
 
 	def select_action(self, state):
-		state = torch.FloatTensor(state.reshape(1, -1)).to(device)
+		state = torch.FloatTensor(state).to(device) #.reshape(1, -1)
 		return self.actor(state).cpu().data.numpy().flatten()
 
 

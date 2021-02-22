@@ -4,12 +4,12 @@ configs: 'configs/configs.yaml'
 env: 'hover' # choices=['takeoff', 'hover', 'flythrugate', 'tune']
 algo: 'TD3' # choices=['TD3', 'DDPG', 'SAC']
 seed: 2
-obs: 'kin'
+obs: 'kin' # rgb
 act: 'one_d_rpm'
 cpu: 1
 start_timesteps: 200 # Time steps initial random policy is used
 eval_freq: 1000 # How often (time steps) we evaluate
-max_timesteps: 1000000 # Max time steps to run environment
+max_timesteps: 500000 # Max time steps to run environment
 expl_noise: 0.1 # Std of Gaussian exploration noise
 batch_size: 256 # Batch size for both actor and critic
 discount: 0.99 # Discount factor

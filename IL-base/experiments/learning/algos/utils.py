@@ -7,10 +7,14 @@ class ReplayBuffer(object):
 		self.max_size = max_size
 		self.ptr = 0
 		self.size = 0
+		if len(state_dim)==3:
+			self.state = np.zeros((max_size, state_dim[0], state_dim[1], state_dim[2]), dtype=np.float32)
+			self.next_state = np.zeros((max_size, state_dim[0], state_dim[1], state_dim[2]), dtype=np.float32)
+		else:
+			self.state = np.zeros((max_size, state_dim[0]), dtype=np.float32)
+			self.next_state = np.zeros((max_size, state_dim[0]), dtype=np.float32)
 
-		self.state = np.zeros((max_size, state_dim))
 		self.action = np.zeros((max_size, action_dim))
-		self.next_state = np.zeros((max_size, state_dim))
 		self.reward = np.zeros((max_size, 1))
 		self.not_done = np.zeros((max_size, 1))
 

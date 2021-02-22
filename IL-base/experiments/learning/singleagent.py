@@ -127,7 +127,7 @@ if __name__ == "__main__":
     print("[INFO] Observation space:", train_env.observation_space)
     # check_env(train_env, warn=True, skip_render_check=True)
 
-    state_dim = train_env.observation_space.shape[0]
+    state_dim = train_env.observation_space.shape[0] if ARGS.obs== ObservationType.KIN else train_env.observation_space.shape[2]
     action_dim = train_env.action_space.shape[0] 
     max_action = float(train_env.action_space.high[0])
 
@@ -150,7 +150,7 @@ if __name__ == "__main__":
         policy_file = filename if ARGS.load_model == "default" else ARGS.load_model
         model.load(policy_file)
 
-    replay_buffer = algos.utils.ReplayBuffer(state_dim, action_dim)
+    replay_buffer = algos.utils.ReplayBuffer(train_env.observation_space.shape, action_dim, ARGS.max_timesteps)
 
     # Evaluate untrained policy
     evaluations = [eval_policy(model, train_env, ARGS.seed)]
