@@ -68,7 +68,6 @@ class CriticCNN(nn.Module):
 		return F.relu(x)
     
 
-
 class Actor(nn.Module):
 	def __init__(self, state_dim, action_dim, max_action):
 		super(Actor, self).__init__()

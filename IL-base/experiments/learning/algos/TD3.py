@@ -11,6 +11,61 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Paper: https://arxiv.org/abs/1802.09477
 
 
+class ActorCNN(nn.Module):
+	def __init__(self, state_dim, action_dim, max_action):
+		super(ActorCNN, self).__init__()
+		self.state_dim = state_dim
+		self.action_dim = action_dim
+		self.features = nn.Sequential(
+			nn.Conv2d(state_dim, 32, kernel_size=8, stride=4),
+			nn.ReLU(),
+			nn.Conv2d(32, 32, kernel_size=4, stride=2),
+			nn.ReLU(),
+			nn.Conv2d(32, 32, kernel_size=3, stride=1),
+			nn.ReLU()
+		)
+		self.fc = nn.Sequential(
+			nn.Linear(256, 512),
+			nn.ReLU(),
+			nn.Linear(512, action_dim)
+		)
+		self.max_action = max_action
+
+	def forward(self, x):
+		x = self.features(x.transpose(1,3))
+		x = x.view(x.size(0), -1)
+		x = self.fc(x)
+		return self.max_action * torch.tanh(x)
+    
+
+
+class CriticCNN(nn.Module):
+	def __init__(self, state_dim, action_dim):
+		super(CriticCNN, self).__init__()
+		self.state_dim = state_dim
+		self.action_dim = action_dim
+		self.features = nn.Sequential(
+			nn.Conv2d(state_dim, 32, kernel_size=8, stride=4),
+			nn.ReLU(),
+			nn.Conv2d(32, 32, kernel_size=4, stride=2),
+			nn.ReLU(),
+			nn.Conv2d(32, 32, kernel_size=3, stride=1),
+			nn.ReLU()
+		)
+		self.fc = nn.Sequential(
+			nn.Linear(256+self.action_dim, 512),
+			nn.ReLU(),
+			nn.Linear(512, 1)
+		)
+        
+	def forward(self, x, action):
+		x = self.features(x.transpose(1,3))
+		x = x.view(x.size(0), -1)
+		x = torch.cat([x, action], axis=1)
+		x = self.fc(x)
+		return F.relu(x)
+
+
 class Actor(nn.Module):
 	def __init__(self, state_dim, action_dim, max_action):
 		super(Actor, self).__init__()
@@ -82,12 +137,13 @@ class TD3(object):
 		self.args = args
 		if args.obs==ObservationType.KIN:
 			self.actor = Actor(state_dim, action_dim, max_action).to(device)
+			self.critic = Critic(state_dim, action_dim).to(device)
 		else:
 			self.actor = ActorCNN(state_dim, action_dim, max_action).to(device)
+			self.critic = CriticCNN(state_dim, action_dim).to(device)
 		self.actor_target = copy.deepcopy(self.actor)
 		self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
 
-		self.critic = Critic(state_dim, action_dim).to(device)
 		self.critic_target = copy.deepcopy(self.critic)
 		self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4)
 
@@ -102,7 +158,7 @@ class TD3(object):
 
 
 	def select_action(self, state):
-		state = torch.FloatTensor(state.reshape(1, -1)).to(device)
+		state = torch.FloatTensor(state).to(device) #.reshape(1, -1)
 		return self.actor(state).cpu().data.numpy().flatten()
 
 
