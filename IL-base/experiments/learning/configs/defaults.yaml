@@ -7,7 +7,7 @@ seed: 2
 obs: 'kin' # rgb
 act: 'one_d_rpm'
 cpu: 1
-start_timesteps: 400 # Time steps initial random policy is used
+start_timesteps: 200 # Time steps initial random policy is used
 eval_freq: 1000 # How often (time steps) we evaluate
 max_timesteps: 200000 # Max time steps to run environment
 expl_noise: 0.1 # Std of Gaussian exploration noise
