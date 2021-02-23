@@ -181,7 +181,7 @@ class Base():
 			action = policy.select_action(np.array(state))
 			state, reward, done, _ = self.step(action)
 			scene_img = self.render()
-			img = Image.fromarray(scene_img)
+			scene_img = Image.fromarray(scene_img)
 			images_scene.append(scene_img)
 
 		images_scene[0].save(filename+'/'+str(time.time())+'-scene.gif', save_all=True, append_images=images_scene[1:], optimize=False, duration=20, loop=0)
@@ -207,7 +207,7 @@ class Normalize():
 		if mode != "rgb_array":
 			return np.array([])
 		base_pos = [0,0,0]
-		_cam_dist = 5  #.3
+		_cam_dist = 2.5  #.3
 		_cam_yaw = 50
 		_cam_pitch = -35
 		_render_width=240
@@ -243,7 +243,7 @@ class Normalize():
 			im = Image.fromarray((state[0,:,:,0:3]*255).astype(np.uint8))
 			images.append(im.resize((240,240)).convert('P'))
 			scene_img = self.render()
-			img = Image.fromarray(scene_img)
+			scene_img = Image.fromarray(scene_img)
 			images_scene.append(scene_img)
 
 		images[0].save(filename+'/'+str(time.time())+'-.gif', save_all=True, append_images=images[1:], optimize=False, duration=20, loop=0)

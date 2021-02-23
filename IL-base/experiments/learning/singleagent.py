@@ -47,17 +47,11 @@ def eval_policy(policy, train_env, seed, eval_episodes=5):
 	eval_env.seed(seed + 100)
 	avg_reward = 0.
 	for _ in range(eval_episodes):
-		images = []
 		state, done = eval_env.reset(), False
 		while not done:
 			action = policy.select_action(np.array(state))
 			state, reward, done, _ = eval_env.step(action)
-			img = eval_env.render()
-			img = Image.fromarray(img)
-			images.append(img)
 			avg_reward += reward
-
-		images[0].save(str(time.time())+'-.gif', save_all=True, append_images=images[1:], optimize=False, duration=20, loop=0)
 
 	avg_reward /= eval_episodes
 
