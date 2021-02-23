@@ -143,7 +143,7 @@ if __name__ == "__main__":
 
     if ARGS.obs== ObservationType.KIN:
         state_dim = train_env.observation_space.shape[0]
-        train_env = algos.utils.Normalize(train_env)
+        train_env = algos.utils.Base(train_env)
     else:
         state_dim = train_env.observation_space.shape[2]
         train_env = algos.utils.Normalize(train_env)

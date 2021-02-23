@@ -114,12 +114,18 @@ def record_video(args, policy, eval_env, seed, shared_constants, filename):
 	eval_env.seed(seed + 100)
 	state, done = eval_env.reset(), False
 	images = []
+	images_scene = []
 	while not done:
 		action = policy.select_action(np.array(state))
 		state, reward, done, _ = eval_env.step(action)
 		im = Image.fromarray((state[0,:,:,0:3]*255).astype(np.uint8))
 		images.append(im.resize((240,240)).convert('P'))
+		scene_img = eval_env.render()
+		img = Image.fromarray(scene_img)
+		images_scene.append(scene_img)
+
 	images[0].save(filename+'/'+str(time.time())+'-.gif', save_all=True, append_images=images[1:], optimize=False, duration=20, loop=0)
+	images_scene[0].save(filename+'/'+str(time.time())+'-scene.gif', save_all=True, append_images=images_scene[1:], optimize=False, duration=20, loop=0)
 
 
 class Base():
@@ -167,6 +173,19 @@ class Base():
 		rgb_array = rgb_array[:, :, :3]
 		return rgb_array
 
+	def record_video(self, args, policy, eval_env, seed, shared_constants, filename):
+		eval_env.seed(seed + 100)
+		state, done = eval_env.reset(), False
+		images_scene = []
+		while not done:
+			action = policy.select_action(np.array(state))
+			state, reward, done, _ = eval_env.step(action)
+			scene_img = eval_env.render()
+			img = Image.fromarray(scene_img)
+			images_scene.append(scene_img)
+
+		images_scene[0].save(filename+'/'+str(time.time())+'-scene.gif', save_all=True, append_images=images_scene[1:], optimize=False, duration=20, loop=0)
+
 
 class Normalize():
 	def __init__(self, inp):
@@ -212,3 +231,21 @@ class Normalize():
 		rgb_array = np.reshape(rgb_array, (_render_height, _render_width, 4))
 		rgb_array = rgb_array[:, :, :3]
 		return rgb_array
+
+	def record_video(self, args, policy, eval_env, seed, shared_constants, filename):
+		eval_env.seed(seed + 100)
+		state, done = eval_env.reset(), False
+		images = []
+		images_scene = []
+		while not done:
+			action = policy.select_action(np.array(state))
+			state, reward, done, _ = eval_env.step(action)
+			im = Image.fromarray((state[0,:,:,0:3]*255).astype(np.uint8))
+			images.append(im.resize((240,240)).convert('P'))
+			scene_img = eval_env.render()
+			img = Image.fromarray(scene_img)
+			images_scene.append(scene_img)
+
+		images[0].save(filename+'/'+str(time.time())+'-.gif', save_all=True, append_images=images[1:], optimize=False, duration=20, loop=0)
+		images_scene[0].save(filename+'/'+str(time.time())+'-scene.gif', save_all=True, append_images=images_scene[1:], optimize=False, duration=20, loop=0)
+
