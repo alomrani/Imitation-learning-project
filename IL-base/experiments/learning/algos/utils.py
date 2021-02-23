@@ -148,7 +148,7 @@ class Base():
 		if mode != "rgb_array":
 			return np.array([])
 		base_pos = [0,0,0]
-		_cam_dist = 5  #.3
+		_cam_dist = 2.5  #.3
 		_cam_yaw = 50
 		_cam_pitch = -35
 		_render_width=240
@@ -173,14 +173,14 @@ class Base():
 		rgb_array = rgb_array[:, :, :3]
 		return rgb_array
 
-	def record_video(self, args, policy, eval_env, seed, shared_constants, filename):
-		eval_env.seed(seed + 100)
-		state, done = eval_env.reset(), False
+	def record_video(self, args, policy, seed, shared_constants, filename):
+		self.seed(seed + 100)
+		state, done = self.reset(), False
 		images_scene = []
 		while not done:
 			action = policy.select_action(np.array(state))
-			state, reward, done, _ = eval_env.step(action)
-			scene_img = eval_env.render()
+			state, reward, done, _ = self.step(action)
+			scene_img = self.render()
 			img = Image.fromarray(scene_img)
 			images_scene.append(scene_img)
 
@@ -232,17 +232,17 @@ class Normalize():
 		rgb_array = rgb_array[:, :, :3]
 		return rgb_array
 
-	def record_video(self, args, policy, eval_env, seed, shared_constants, filename):
-		eval_env.seed(seed + 100)
-		state, done = eval_env.reset(), False
+	def record_video(self, args, policy, seed, shared_constants, filename):
+		self.seed(seed + 100)
+		state, done = self.reset(), False
 		images = []
 		images_scene = []
 		while not done:
 			action = policy.select_action(np.array(state))
-			state, reward, done, _ = eval_env.step(action)
+			state, reward, done, _ = self.step(action)
 			im = Image.fromarray((state[0,:,:,0:3]*255).astype(np.uint8))
 			images.append(im.resize((240,240)).convert('P'))
-			scene_img = eval_env.render()
+			scene_img = self.render()
 			img = Image.fromarray(scene_img)
 			images_scene.append(scene_img)
 

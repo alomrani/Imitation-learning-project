@@ -224,8 +224,8 @@ if __name__ == "__main__":
             if ARGS.save_model: model.save(filename)
             logger.log_data()
         
-        if (t+1) % ARGS.record_freq == 0 and ARGS.obs==ObservationType.RGB:
-            algos.utils.record_video(ARGS, model, train_env, ARGS.seed, shared_constants, filename)
+        if (t+1) % ARGS.record_freq == 0:
+            train_env.record_video(ARGS, model, ARGS.seed, shared_constants, filename)
 
     logger.res_plot(filename)
     logger.save_logs(filename)
