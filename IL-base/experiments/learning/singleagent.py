@@ -35,7 +35,6 @@ import shared_constants
 EPISODE_REWARD_THRESHOLD = -0 # Upperbound: rewards are always negative, but non-zero
 """float: Reward threshold to halt the script."""
 
-
 def eval_policy(policy, train_env, seed, eval_episodes=5):
 	eval_env = train_env
 	eval_env.seed(seed + 100)
@@ -129,7 +128,11 @@ if __name__ == "__main__":
     print("[INFO] Observation space:", train_env.observation_space)
     # check_env(train_env, warn=True, skip_render_check=True)
 
-    state_dim = train_env.observation_space.shape[0] if ARGS.obs== ObservationType.KIN else train_env.observation_space.shape[2]
+    if ARGS.obs== ObservationType.KIN:
+        state_dim = train_env.observation_space.shape[0]
+    else:
+        state_dim = train_env.observation_space.shape[2]
+        train_env = algos.utils.Normalize(train_env)
     action_dim = train_env.action_space.shape[0] 
     max_action = float(train_env.action_space.high[0])
 

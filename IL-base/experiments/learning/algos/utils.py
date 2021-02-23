@@ -121,6 +121,19 @@ def record_video(args, policy, eval_env, seed, shared_constants, filename):
 	images[0].save(filename+'/'+str(time.time())+'-.gif', save_all=True, append_images=images[1:], optimize=False, duration=20, loop=0)
 
 
+class Normalize():
+	def __init__(self, inp):
+		self.inp = inp
+		self.action_space = inp.action_space
+		self.observation_space = inp.observation_space
 
+	def step(self, action):
+		state, reward, done, _ = self.inp.step(action)
+		return state / 255., reward, done, _
 
+	def reset(self):
+		return self.inp.reset() / 255.
+
+	def seed(self, val):
+		self.inp.seed(val)
 

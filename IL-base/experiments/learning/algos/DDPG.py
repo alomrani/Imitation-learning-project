@@ -177,4 +177,5 @@ class DDPG(object):
 		self.actor.load_state_dict(torch.load(filename + "/_actor"))
 		self.actor_optimizer.load_state_dict(torch.load(filename + "/_actor_optimizer"))
 		self.actor_target = copy.deepcopy(self.actor)
-		
+
+
