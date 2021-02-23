@@ -72,9 +72,9 @@ class Actor(nn.Module):
 	def __init__(self, state_dim, action_dim, max_action):
 		super(Actor, self).__init__()
 
-		self.l1 = nn.Linear(state_dim, 256)
-		self.l2 = nn.Linear(256, 128)
-		self.l3 = nn.Linear(128, action_dim)
+		self.l1 = nn.Linear(state_dim, 400)
+		self.l2 = nn.Linear(400, 300)
+		self.l3 = nn.Linear(300, action_dim)
 		
 		self.max_action = max_action
 
@@ -89,9 +89,9 @@ class Critic(nn.Module):
 	def __init__(self, state_dim, action_dim):
 		super(Critic, self).__init__()
 
-		self.l1 = nn.Linear(state_dim, 256)
-		self.l2 = nn.Linear(256 + action_dim, 128)
-		self.l3 = nn.Linear(128, 1)
+		self.l1 = nn.Linear(state_dim, 400)
+		self.l2 = nn.Linear(400 + action_dim, 300)
+		self.l3 = nn.Linear(300, 1)
 
 
 	def forward(self, state, action):
