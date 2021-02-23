@@ -4,6 +4,7 @@ import time
 import csv
 import gym
 import random
+import pybullet as pb
 from PIL import Image
 import matplotlib.pyplot as plt
 from collections import deque
@@ -117,8 +118,54 @@ def record_video(args, policy, eval_env, seed, shared_constants, filename):
 		action = policy.select_action(np.array(state))
 		state, reward, done, _ = eval_env.step(action)
 		im = Image.fromarray((state[0,:,:,0:3]*255).astype(np.uint8))
-		images.append(im.resize((100,100)).convert('P'))
+		images.append(im.resize((240,240)).convert('P'))
 	images[0].save(filename+'/'+str(time.time())+'-.gif', save_all=True, append_images=images[1:], optimize=False, duration=20, loop=0)
+
+
+class Base():
+	def __init__(self, inp):
+		self.inp = inp
+		self.action_space = inp.action_space
+		self.observation_space = inp.observation_space
+
+	def step(self, action):
+		state, reward, done, _ = self.inp.step(action)
+		return state, reward, done, _
+
+	def reset(self):
+		return self.inp.reset()
+
+	def seed(self, val):
+		self.inp.seed(val)
+	
+	def render(self, mode="rgb_array", close=False):
+		if mode != "rgb_array":
+			return np.array([])
+		base_pos = [0,0,0]
+		_cam_dist = 5  #.3
+		_cam_yaw = 50
+		_cam_pitch = -35
+		_render_width=240
+		_render_height=240
+
+		view_matrix = pb.computeViewMatrixFromYawPitchRoll(
+			cameraTargetPosition=base_pos,
+			distance=_cam_dist,
+			yaw=_cam_yaw,
+			pitch=_cam_pitch,
+			roll=0,
+			upAxisIndex=2)
+		proj_matrix = pb.computeProjectionMatrixFOV(
+			fov=90, aspect=float(_render_width)/_render_height,
+			nearVal=0.01, farVal=100.0)
+		#proj_matrix=[1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, -1.0000200271606445, -1.0, 0.0, 0.0, -0.02000020071864128, 0.0]
+		(_, _, px, _, _) = pb.getCameraImage(
+			width=_render_width, height=_render_height, viewMatrix=view_matrix,
+			projectionMatrix=proj_matrix, renderer=pb.ER_TINY_RENDERER) #ER_BULLET_HARDWARE_OPENGL)
+		rgb_array = np.array(px, dtype=np.uint8)
+		rgb_array = np.reshape(rgb_array, (_render_height, _render_width, 4))
+		rgb_array = rgb_array[:, :, :3]
+		return rgb_array
 
 
 class Normalize():
@@ -136,4 +183,32 @@ class Normalize():
 
 	def seed(self, val):
 		self.inp.seed(val)
+	
+	def render(self, mode="rgb_array", close=False):
+		if mode != "rgb_array":
+			return np.array([])
+		base_pos = [0,0,0]
+		_cam_dist = 5  #.3
+		_cam_yaw = 50
+		_cam_pitch = -35
+		_render_width=240
+		_render_height=240
 
+		view_matrix = pb.computeViewMatrixFromYawPitchRoll(
+			cameraTargetPosition=base_pos,
+			distance=_cam_dist,
+			yaw=_cam_yaw,
+			pitch=_cam_pitch,
+			roll=0,
+			upAxisIndex=2)
+		proj_matrix = pb.computeProjectionMatrixFOV(
+			fov=90, aspect=float(_render_width)/_render_height,
+			nearVal=0.01, farVal=100.0)
+		#proj_matrix=[1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, -1.0000200271606445, -1.0, 0.0, 0.0, -0.02000020071864128, 0.0]
+		(_, _, px, _, _) = pb.getCameraImage(
+			width=_render_width, height=_render_height, viewMatrix=view_matrix,
+			projectionMatrix=proj_matrix, renderer=pb.ER_TINY_RENDERER) #ER_BULLET_HARDWARE_OPENGL)
+		rgb_array = np.array(px, dtype=np.uint8)
+		rgb_array = np.reshape(rgb_array, (_render_height, _render_width, 4))
+		rgb_array = rgb_array[:, :, :3]
+		return rgb_array

@@ -9,6 +9,7 @@ To run the script, type in a terminal:
 
 """
 import os
+os.environ['OMP_NUM_THREADS'] = '1'
 import time
 from datetime import datetime
 import argparse
@@ -17,6 +18,7 @@ import copy
 import ruamel.yaml as yaml
 import subprocess
 import gym
+from PIL import Image
 import numpy as np
 import torch
 from stable_baselines3.common.env_checker import check_env
@@ -31,6 +33,11 @@ from gym_pybullet_drones.envs.single_agent_rl.TuneAviary import TuneAviary
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ActionType, ObservationType
 
 import shared_constants
+# import torch.multiprocessing as mp
+# mp.set_start_method('spawn',force=True)
+
+os.sched_setaffinity(os.getpid(), {0})
+os.system("taskset -p 0xffffffffffffffffffffffff %d" % os.getpid())
 
 EPISODE_REWARD_THRESHOLD = -0 # Upperbound: rewards are always negative, but non-zero
 """float: Reward threshold to halt the script."""
@@ -40,11 +47,17 @@ def eval_policy(policy, train_env, seed, eval_episodes=5):
 	eval_env.seed(seed + 100)
 	avg_reward = 0.
 	for _ in range(eval_episodes):
+		images = []
 		state, done = eval_env.reset(), False
 		while not done:
 			action = policy.select_action(np.array(state))
 			state, reward, done, _ = eval_env.step(action)
+			img = eval_env.render()
+			img = Image.fromarray(img)
+			images.append(img)
 			avg_reward += reward
+
+		images[0].save(str(time.time())+'-.gif', save_all=True, append_images=images[1:], optimize=False, duration=20, loop=0)
 
 	avg_reward /= eval_episodes
 
@@ -130,6 +143,7 @@ if __name__ == "__main__":
 
     if ARGS.obs== ObservationType.KIN:
         state_dim = train_env.observation_space.shape[0]
+        train_env = algos.utils.Normalize(train_env)
     else:
         state_dim = train_env.observation_space.shape[2]
         train_env = algos.utils.Normalize(train_env)
@@ -155,7 +169,7 @@ if __name__ == "__main__":
         policy_file = filename if ARGS.load_model == "default" else ARGS.load_model
         model.load(policy_file)
 
-    replay_buffer = algos.utils.ReplayBuffer(train_env.observation_space.shape, action_dim, ARGS.max_timesteps)
+    replay_buffer = algos.utils.ReplayBuffer(train_env.observation_space.shape, action_dim, 40000) #ARGS.max_timesteps
 
     # Evaluate untrained policy
     evaluations = [eval_policy(model, train_env, ARGS.seed)]
