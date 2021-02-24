@@ -2,7 +2,7 @@
 configs: 'configs/configs.yaml'
 
 env: 'hover' # choices=['takeoff', 'hover', 'flythrugate', 'tune']
-algo: 'TD3' # choices=['TD3', 'DDPG', 'SAC']
+algo: 'SAC' # choices=['TD3', 'DDPG', 'SAC']
 seed: 105
 obs: 'kin' # rgb
 act: 'one_d_rpm'
@@ -21,7 +21,9 @@ save_model: "store_true" # Save model and optimizer parameters
 load_model: "" # Model load file name, "" doesn't load, 
 window_size: 20 # average range for plottting
 record_freq: 100000 # frequency for video recording
-
+alpha: 0.1 # temperature parameter for SAC
+target_update_interval: # update interval for SAC critic
+automatic_mutation_tuning: True # tune temp parameter for SAC
 
 
 

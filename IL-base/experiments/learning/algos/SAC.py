@@ -177,7 +177,7 @@ class SAC(object):
 
         self.target_update_interval = args.target_update_interval
         self.automatic_entropy_tuning = args.automatic_entropy_tuning
-        self.device = torch.device("cuda" if args.cuda else "cpu")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 		if args.obs==ObservationType.KIN:
@@ -253,26 +253,22 @@ class SAC(object):
 
         return actor_loss.item(), critic_loss.item()
 
-    # Save model parameters
-    def save_model(self, env_name, suffix="", actor_path=None, critic_path=None):
-        if not os.path.exists('models/'):
-            os.makedirs('models/')
+	def save(self, filename):
+		torch.save(self.critic.state_dict(), filename + "/_critic")
+		torch.save(self.critic_optimizer.state_dict(), filename + "/_critic_optimizer")
+		
+		torch.save(self.actor.state_dict(), filename + "/_actor")
+		torch.save(self.actor_optimizer.state_dict(), filename + "/_actor_optimizer")
 
-        if actor_path is None:
-            actor_path = "models/sac_actor_{}_{}".format(env_name, suffix)
-        if critic_path is None:
-            critic_path = "models/sac_critic_{}_{}".format(env_name, suffix)
-        print('Saving models to {} and {}'.format(actor_path, critic_path))
-        torch.save(self.policy.state_dict(), actor_path)
-        torch.save(self.critic.state_dict(), critic_path)
 
-    # Load model parameters
-    def load_model(self, actor_path, critic_path):
-        print('Loading models from {} and {}'.format(actor_path, critic_path))
-        if actor_path is not None:
-            self.policy.load_state_dict(torch.load(actor_path))
-        if critic_path is not None:
-            self.critic.load_state_dict(torch.load(critic_path))
+	def load(self, filename):
+		self.critic.load_state_dict(torch.load(filename + "/_critic"))
+		self.critic_optimizer.load_state_dict(torch.load(filename + "/_critic_optimizer"))
+		self.critic_target = copy.deepcopy(self.critic)
+
+		self.actor.load_state_dict(torch.load(filename + "/_actor"))
+		self.actor_optimizer.load_state_dict(torch.load(filename + "/_actor_optimizer"))
+		self.actor_target = copy.deepcopy(self.actor)
 
 
 
