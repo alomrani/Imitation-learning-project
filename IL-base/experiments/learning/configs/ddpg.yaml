@@ -1,5 +1,5 @@
 
-configs: 'configs/configs.yaml'
+configs: 'configs/ddpg.yaml'
 
 env: 'hover' # choices=['takeoff', 'hover', 'flythrugate', 'tune']
 algo: 'SAC' # choices=['TD3', 'DDPG', 'SAC']
