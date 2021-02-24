@@ -22,8 +22,8 @@ load_model: "" # Model load file name, "" doesn't load,
 window_size: 20 # average range for plottting
 record_freq: 100000 # frequency for video recording
 alpha: 0.1 # temperature parameter for SAC
-target_update_interval: # update interval for SAC critic
-automatic_mutation_tuning: True # tune temp parameter for SAC
+target_update_interval: 2 # update interval for SAC critic
+automatic_entropy_tuning: True # tune temp parameter for SAC
 
 
 

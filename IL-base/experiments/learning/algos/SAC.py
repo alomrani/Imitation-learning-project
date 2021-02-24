@@ -7,7 +7,14 @@ from torch.distributions import Normal
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ObservationType
 
 LOG_SIG_MAX = 2
-LOG_SIG_MIN = -20
+LOG_SIG_MIN = -5
+epsilon = 1e-6
+
+def weights_init_(m):
+    if isinstance(m, nn.Linear):
+        torch.nn.init.xavier_uniform_(m.weight, gain=1)
+        torch.nn.init.constant_(m.bias, 0)
+
 
 class ActorCNN(nn.Module):
 	def __init__(self, state_dim, action_dim, max_action):
@@ -89,14 +96,14 @@ class Actor(nn.Module):
         self.apply(weights_init_)
 
         # action rescaling
-        if action_space is None:
-            self.action_scale = torch.tensor(1.)
-            self.action_bias = torch.tensor(0.)
-        else:
-            self.action_scale = torch.FloatTensor(
-                (1 - (-1))) / 2.)
-            self.action_bias = torch.FloatTensor(
-                (1 + (-1))) / 2.)
+        # if action_space is None:
+        #     self.action_scale = torch.tensor(1.)
+        #     self.action_bias = torch.tensor(0.)
+        # else:
+        self.action_scale = torch.tensor(
+            1.)
+        self.action_bias = torch.tensor(
+            1.)
 
     def forward(self, state):
         x = F.relu(self.linear1(state))
@@ -173,31 +180,31 @@ class SAC(object):
         self.tau = tau
         self.alpha = args.alpha
 
-		self.total_it = 0
+        self.total_it = 0
 
         self.target_update_interval = args.target_update_interval
         self.automatic_entropy_tuning = args.automatic_entropy_tuning
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-		if args.obs==ObservationType.KIN:
+        if args.obs==ObservationType.KIN:
             self.actor = Actor(state_dim, action_dim).to(self.device)
             self.critic = Critic(state_dim, action_dim).to(device=self.device)
-		# else:
-		# 	self.actor = ActorCNN(state_dim, action_dim).to(device)
-		# 	self.critic = CriticCNN(state_dim, action_dim).to(device)
-	
-    	self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=1e-4)
+        # else:
+        # 	self.actor = ActorCNN(state_dim, action_dim).to(device)
+        # 	self.critic = CriticCNN(state_dim, action_dim).to(device)
+
+        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=1e-4)
 
         self.critic = Critic(state_dim, action_dim).to(device=self.device)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=1e-4)
-    
+
         self.critic_target = copy.deepcopy(self.critic)
 
         if self.automatic_entropy_tuning is True:
             self.target_entropy = -torch.prod(torch.Tensor(action_dim).to(self.device)).item()
             self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
-            self.alpha_optimizer = Adam([self.log_alpha], lr=1e-4)
+            self.alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=1e-4)
 
 
     def select_action(self, state):
@@ -208,7 +215,7 @@ class SAC(object):
     def train(self, replay_buffer, batch_size):
         self.total_it += 1
         # Sample a batch from memory
-		state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
+        state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
 
         with torch.no_grad():
             next_action, next_log_pi, _ = self.actor.sample(next_state)
@@ -229,10 +236,10 @@ class SAC(object):
         qf1_pi, qf2_pi = self.critic(state, pi)
         min_qf_pi = torch.min(qf1_pi, qf2_pi)
 
-        policy_loss = ((self.alpha * log_pi) - min_qf_pi).mean() # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]
+        actor_loss = ((self.alpha * log_pi) - min_qf_pi).mean() # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]
 
         self.actor_optimizer.zero_grad()
-        policy_loss.backward()
+        actor_loss.backward()
         self.actor_optimizer.step()
 
         if self.automatic_entropy_tuning:
@@ -248,27 +255,27 @@ class SAC(object):
 
 
         if self.total_it % self.target_update_interval == 0:
-			for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
-				target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+            for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
         return actor_loss.item(), critic_loss.item()
 
-	def save(self, filename):
-		torch.save(self.critic.state_dict(), filename + "/_critic")
-		torch.save(self.critic_optimizer.state_dict(), filename + "/_critic_optimizer")
-		
-		torch.save(self.actor.state_dict(), filename + "/_actor")
-		torch.save(self.actor_optimizer.state_dict(), filename + "/_actor_optimizer")
+    def save(self, filename):
+        torch.save(self.critic.state_dict(), filename + "/_critic")
+        torch.save(self.critic_optimizer.state_dict(), filename + "/_critic_optimizer")
+        
+        torch.save(self.actor.state_dict(), filename + "/_actor")
+        torch.save(self.actor_optimizer.state_dict(), filename + "/_actor_optimizer")
 
 
-	def load(self, filename):
-		self.critic.load_state_dict(torch.load(filename + "/_critic"))
-		self.critic_optimizer.load_state_dict(torch.load(filename + "/_critic_optimizer"))
-		self.critic_target = copy.deepcopy(self.critic)
+    def load(self, filename):
+        self.critic.load_state_dict(torch.load(filename + "/_critic"))
+        self.critic_optimizer.load_state_dict(torch.load(filename + "/_critic_optimizer"))
+        self.critic_target = copy.deepcopy(self.critic)
 
-		self.actor.load_state_dict(torch.load(filename + "/_actor"))
-		self.actor_optimizer.load_state_dict(torch.load(filename + "/_actor_optimizer"))
-		self.actor_target = copy.deepcopy(self.actor)
+        self.actor.load_state_dict(torch.load(filename + "/_actor"))
+        self.actor_optimizer.load_state_dict(torch.load(filename + "/_actor_optimizer"))
+        self.actor_target = copy.deepcopy(self.actor)
 
 
 
