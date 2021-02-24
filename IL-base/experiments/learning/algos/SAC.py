@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.distributions import Normal
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ObservationType
 
 LOG_SIG_MAX = 2
@@ -76,7 +77,7 @@ class CriticCNN(nn.Module):
 		return q1
 
 class Actor(nn.Module):
-    def __init__(self, num_inputs, num_actions, action_space=None):
+    def __init__(self, num_inputs, num_actions):
         super(Actor, self).__init__()
         
         self.linear1 = nn.Linear(num_inputs, 1024)
