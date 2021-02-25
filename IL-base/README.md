@@ -58,7 +58,7 @@ Our project is implemented using the [`singleagent.py`](experiments/learning/sin
 To run an `SAC` agent on the `takeoff` task use the following-
 
 ```
-python singleagent.py --configs configs/defaults.yaml takeoff
+python singleagent.py --configs SAC --env takeoff
 ```
 
 This will train the agent for `1e5` timesteps and save results in the [`results`](experiments/learning/results) folder. 
@@ -66,10 +66,10 @@ This will train the agent for `1e5` timesteps and save results in the [`results`
 The default settings will train a `SAC` agent on the `hover` task as per the following-
 
 ```
-python singleagent.py --configs configs/defaults.yaml hover
+python singleagent.py
 ```
 
-Custom implementations can be trained using their respective `config` files.  
+Custom implementations can be trained using config files in their respective directories in the `config` folder.  
 
 *NOTE FOR MASTER BRANCH- Do not change the files until a major change is required. Make changes to your branch first. IF they work then we will incorporate them in the master branch.*  
 
