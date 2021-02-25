@@ -72,7 +72,7 @@ def build_parser():
     parser.add_argument("--env", type=str, default='hover') 
     args, remaining = parser.parse_known_args()
     conf_str = get_configs(args)
-    config_ = yaml.safe_load((conf_str).read_text())
+    config_ = yaml.safe_load(open(conf_str, 'r'))
     parser = argparse.ArgumentParser()
     for key, value in config_.items():
         if key=='obs':
