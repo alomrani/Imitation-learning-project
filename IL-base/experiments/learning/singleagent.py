@@ -42,6 +42,11 @@ os.system("taskset -p 0xffffffffffffffffffffffff %d" % os.getpid())
 EPISODE_REWARD_THRESHOLD = -0 # Upperbound: rewards are always negative, but non-zero
 """float: Reward threshold to halt the script."""
 
+def get_configs(args):
+    print('./configs/'+args.configs+'/'+args.configs+'_'+args.env+'.yaml')
+    return './configs/'+args.configs+'/'+args.configs+'_'+args.env+'.yaml'
+
+
 def eval_policy(policy, train_env, seed, eval_episodes=5):
 	eval_env = train_env
 	eval_env.seed(seed + 100)
@@ -63,11 +68,11 @@ def eval_policy(policy, train_env, seed, eval_episodes=5):
 
 def build_parser():
     parser = argparse.ArgumentParser(description='Single agent reinforcement learning experiments script')
-    parser.add_argument('--configs', type=str, default='configs/defaults.yaml',
-                     nargs='+', required=True)
-    parser.add_argument("--save_model", action="store_true")        # Save model and optimizer parameters
+    parser.add_argument('--configs', type=str, default='SAC')
+    parser.add_argument("--env", type=str, default='hover') 
     args, remaining = parser.parse_known_args()
-    config_ = yaml.safe_load((pathlib.Path(__file__).parent / args.configs[0]).read_text())
+    conf_str = get_configs(args)
+    config_ = yaml.safe_load((conf_str).read_text())
     parser = argparse.ArgumentParser()
     for key, value in config_.items():
         if key=='obs':
@@ -87,7 +92,7 @@ if __name__ == "__main__":
     logger = algos.utils.Logger(ARGS)
 
     #### Save directory ########################################
-    filename = os.path.dirname(os.path.abspath(__file__))+'/results/save-'+ARGS.env+'-'+ARGS.algo+'-'+ARGS.obs.value+'-'+ARGS.act.value+'-'+datetime.now().strftime("%m.%d.%Y_%H.%M.%S")
+    filename = os.path.dirname(os.path.abspath(__file__))+'/results/save-'+ARGS.env+'-'+ARGS.configs+'-'+ARGS.obs.value+'-'+ARGS.act.value+'-'+datetime.now().strftime("%m.%d.%Y_%H.%M.%S")
     if not os.path.exists(filename):
         os.makedirs(filename+'/')
 
@@ -104,7 +109,7 @@ if __name__ == "__main__":
     if ARGS.act == ActionType.TUN and ARGS.env != 'tune' :
         print("[ERROR] ActionType.TUN is only compatible with TuneAviary")
         exit()
-    if ARGS.algo in ['sac', 'td3', 'ddpg'] and ARGS.cpu!=1: 
+    if ARGS.configs in ['SAC', 'TD3', 'DDPG'] and ARGS.cpu!=1: 
         print("[ERROR] The selected algorithm does not support multiple environments")
         exit()
 
@@ -156,7 +161,7 @@ if __name__ == "__main__":
         "policy_freq" : ARGS.policy_freq
     }
 
-    model = getattr(algos, ARGS.algo)(**kwargs)
+    model = getattr(algos, ARGS.configs)(**kwargs)
 
 
     if ARGS.load_model != "":

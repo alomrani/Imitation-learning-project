@@ -1,8 +1,6 @@
 
-configs: 'configs/ddpg.yaml'
-
+configs: 'DDPG' # choices=['TD3', 'DDPG', 'SAC']
 env: 'hover' # choices=['takeoff', 'hover', 'flythrugate', 'tune']
-algo: 'DDPG' # choices=['TD3', 'DDPG', 'SAC']
 seed: 105
 obs: 'kin' # rgb
 act: 'one_d_rpm'

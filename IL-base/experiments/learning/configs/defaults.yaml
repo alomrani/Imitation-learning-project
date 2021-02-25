@@ -1,8 +1,6 @@
 
-configs: 'configs/defaults.yaml'
-
+configs: 'SAC' # choices=['TD3', 'DDPG', 'SAC']
 env: 'hover' # choices=['takeoff', 'hover', 'flythrugate', 'tune']
-algo: 'SAC' # choices=['TD3', 'DDPG', 'SAC']
 seed: 105
 obs: 'kin' # rgb
 act: 'one_d_rpm'
