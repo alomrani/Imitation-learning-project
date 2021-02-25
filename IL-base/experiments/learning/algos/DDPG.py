@@ -110,7 +110,7 @@ class DDPG(object):
 			self.actor = ActorCNN(state_dim, action_dim, max_action).to(device)
 			self.critic = CriticCNN(state_dim, action_dim).to(device)
 		self.actor_target = copy.deepcopy(self.actor)
-		self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=1e-4)
+		self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=self.args.lr)
 
 		self.critic_target = copy.deepcopy(self.critic)
 		self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), weight_decay=1e-2)

@@ -2,7 +2,7 @@
 configs: 'configs/ddpg.yaml'
 
 env: 'hover' # choices=['takeoff', 'hover', 'flythrugate', 'tune']
-algo: 'DDPG' # choices=['TD3', 'DDPG', 'SAC']
+algo: 'TD3' # choices=['TD3', 'DDPG', 'SAC']
 seed: 105
 obs: 'kin' # rgb
 act: 'one_d_rpm'
@@ -12,7 +12,7 @@ eval_freq: 1000 # How often (time steps) we evaluate
 max_timesteps: 500000 # Max time steps to run environment
 expl_noise: 0.1 # Std of Gaussian exploration noise
 batch_size: 256 # Batch size for both actor and critic
-lr: 0.0001 # learning for actor & critic
+lr: 0.0003 # learning for actor & critic
 discount: 0.99 # Discount factor
 tau: 0.005 # Target network update rate
 policy_noise: 0.2 # Noise added to target policy

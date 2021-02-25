@@ -195,17 +195,17 @@ class SAC(object):
         # 	self.actor = ActorCNN(state_dim, action_dim).to(device)
         # 	self.critic = CriticCNN(state_dim, action_dim).to(device)
 
-        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-5)
+        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=self.args.lr)
 
         self.critic = Critic(state_dim, action_dim).to(device=self.device)
-        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-5)
+        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=self.args.lr)
 
         self.critic_target = copy.deepcopy(self.critic)
 
         if self.automatic_entropy_tuning is True:
             self.target_entropy = -torch.prod(torch.Tensor(action_dim).to(self.device)).item()
             self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
-            self.alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=3e-5)
+            self.alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=self.args.lr)
 
 
     def select_action(self, state):
