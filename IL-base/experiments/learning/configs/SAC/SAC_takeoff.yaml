@@ -22,7 +22,7 @@ record_freq: 100000 # frequency for video recording
 alpha: 0.001 # temperature parameter for SAC
 target_update_interval: 2 # update interval for SAC critic
 automatic_entropy_tuning: False # tune temp parameter for SAC
-num_updates: 1 # number of SAC updates
+num_updates: 2 # number of SAC updates
 
 
 
