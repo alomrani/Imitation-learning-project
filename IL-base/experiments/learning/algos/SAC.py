@@ -54,24 +54,24 @@ class ActorCNN(nn.Module):
 		x = self.features(x.transpose(1,3))
 		x = x.view(x.size(0), -1)
 		mean = self.mean_fc(x)
-    log_std = self.std_fc(x)
-    log_std = torch.clamp(log_std, min=LOG_SIG_MIN, max=LOG_SIG_MAX)
-    return mean, log_std
-		return self.max_action * torch.tanh(x)
+        log_std = self.std_fc(x)
+        log_std = torch.clamp(log_std, min=LOG_SIG_MIN, max=LOG_SIG_MAX)
+        return mean, log_std
+		# return self.max_action * torch.tanh(x)
 
-  def sample(self, state):
-    mean, log_std = self.forward(state)
-    std = log_std.exp()
-    normal = Normal(mean, std)
-    x_t = normal.rsample()  # for reparameterization trick (mean + std * N(0,1))
-    y_t = torch.tanh(x_t)
-    action = y_t * self.action_scale + self.action_bias
-    log_prob = normal.log_prob(x_t)
-    # Enforcing Action Bound
-    log_prob -= torch.log(self.action_scale * (1 - y_t.pow(2)) + epsilon)
-    log_prob = log_prob.sum(1, keepdim=True)
-    mean = torch.tanh(mean) * self.action_scale + self.action_bias
-    return action, log_prob, mean
+    def sample(self, state):
+        mean, log_std = self.forward(state)
+        std = log_std.exp()
+        normal = Normal(mean, std)
+        x_t = normal.rsample()  # for reparameterization trick (mean + std * N(0,1))
+        y_t = torch.tanh(x_t)
+        action = y_t * self.action_scale + self.action_bias
+        log_prob = normal.log_prob(x_t)
+        # Enforcing Action Bound
+        log_prob -= torch.log(self.action_scale * (1 - y_t.pow(2)) + epsilon)
+        log_prob = log_prob.sum(1, keepdim=True)
+        mean = torch.tanh(mean) * self.action_scale + self.action_bias
+        return action, log_prob, mean
 
 
 
