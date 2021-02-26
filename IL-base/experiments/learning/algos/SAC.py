@@ -18,28 +18,28 @@ def weights_init_(m):
         torch.nn.init.constant_(m.bias, 0)
 
 class Encoder(nn.Module):
-    def __init__(elf, state_dim):
+    def __init__(self, state_dim):
         super(Encoder, self).__init__()
-		self.state_dim = state_dim
+        self.state_dim = state_dim
         self.detach = True
-		self.features = nn.Sequential(
-			nn.Conv2d(state_dim, 32, kernel_size=3, stride=2),
+        self.features = nn.Sequential(
+            nn.Conv2d(state_dim, 32, kernel_size=3, stride=2),
             nn.ReLU(),
-			nn.Conv2d(32, 32, kernel_size=3, stride=1),
+            nn.Conv2d(32, 32, kernel_size=3, stride=1),
             nn.ReLU(),
-			nn.Conv2d(32, 32, kernel_size=3, stride=1),
+            nn.Conv2d(32, 32, kernel_size=3, stride=1),
             nn.ReLU(),
-			nn.Conv2d(32, 32, kernel_size=3, stride=1)
-            nn.ReLU(),
-		)
-		self.fc = nn.Sequential(
-			nn.Linear(32*35*35, encoder_size),
-			nn.LayerNorm(encoder_size)
-		)
+            nn.Conv2d(32, 32, kernel_size=3, stride=1),
+            nn.ReLU()
+        )
+        self.fc = nn.Sequential(
+            nn.Linear(32*425, encoder_size),
+            nn.LayerNorm(encoder_size)
+        )
 
     def forward(self, x):
         x = self.features(x.transpose(1,3))
-		x = x.view(x.size(0), -1)
+        x = x.view(x.size(0), -1)
         if self.detach:
             x.detach()
         x = self.fc(x)
@@ -47,9 +47,9 @@ class Encoder(nn.Module):
 
     def copy_conv_weights_from(self, source):
         """Tie convolutional layers"""
-        for i in range(self.num_layers):
-            self.convs[i].weight = source.convs[i].weight
-            self.convs[i].bias = source.convs[i].bias
+        for layer in range(len(self.features),2):
+            self.features[layer].weight = source.features[layer].weight
+            self.features[layer].bias = source.features[layer].bias
 
 
 class ActorCNN(nn.Module):
@@ -100,36 +100,36 @@ class ActorCNN(nn.Module):
     def to(self, device):
         self.action_scale = self.action_scale.to(device)
         self.action_bias = self.action_bias.to(device)
-        return super(Actor, self).to(device)
+        return super(ActorCNN, self).to(device)
 
 
 class CriticCNN(nn.Module):
-	def __init__(self, state_dim, action_dim):
-		super(CriticCNN, self).__init__()
-        self.encoder = Encoder(num_inputs)
-		# Q1 architecture
-		self.l1 = nn.Linear(encoder_size + action_dim, hidden_size)
-		self.l2 = nn.Linear(hidden_size, hidden_size)
-		self.l3 = nn.Linear(hidden_size, 1)
+    def __init__(self, state_dim, action_dim):
+        super(CriticCNN, self).__init__()
+        self.encoder = Encoder(state_dim)
+        # Q1 architecture
+        self.l1 = nn.Linear(encoder_size + action_dim, hidden_size)
+        self.l2 = nn.Linear(hidden_size, hidden_size)
+        self.l3 = nn.Linear(hidden_size, 1)
 
-		# Q2 architecture
-		self.l4 = nn.Linear(encoder + action_dim, hidden_size)
-		self.l5 = nn.Linear(hidden_size, hidden_size)
-		self.l6 = nn.Linear(hidden_size, 1)
+        # Q2 architecture
+        self.l4 = nn.Linear(encoder_size + action_dim, hidden_size)
+        self.l5 = nn.Linear(hidden_size, hidden_size)
+        self.l6 = nn.Linear(hidden_size, 1)
 
 
-	def forward(self, state, action):
+    def forward(self, state, action):
         enc_state = self.encoder(state)
-		sa = torch.cat([enc_state, action], 1)
+        sa = torch.cat([enc_state, action], 1)
 
-		q1 = F.relu(self.l1(sa))
-		q1 = F.relu(self.l2(q1))
-		q1 = self.l3(q1)
+        q1 = F.relu(self.l1(sa))
+        q1 = F.relu(self.l2(q1))
+        q1 = self.l3(q1)
 
-		q2 = F.relu(self.l4(sa))
-		q2 = F.relu(self.l5(q2))
-		q2 = self.l6(q2)
-		return q1, q2
+        q2 = F.relu(self.l4(sa))
+        q2 = F.relu(self.l5(q2))
+        q2 = self.l6(q2)
+        return q1, q2
 
 
 class Actor(nn.Module):
@@ -240,13 +240,12 @@ class SAC(object):
             self.actor = Actor(state_dim, action_dim).to(self.device)
             self.critic = Critic(state_dim, action_dim).to(device=self.device)
         else:
-        	self.actor = ActorCNN(state_dim, action_dim).to(device)
-        	self.critic = CriticCNN(state_dim, action_dim).to(device)
+            self.actor = ActorCNN(state_dim, action_dim).to(self.device)
+            self.critic = CriticCNN(state_dim, action_dim).to(self.device)
             self.actor.encoder.copy_conv_weights_from(self.critic.encoder)
 
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=self.args.lr)
 
-        self.critic = Critic(state_dim, action_dim).to(device=self.device)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=self.args.lr)
 
         self.critic_target = copy.deepcopy(self.critic)
