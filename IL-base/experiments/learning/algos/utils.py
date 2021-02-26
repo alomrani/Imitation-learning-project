@@ -192,10 +192,11 @@ class Normalize():
 		self.inp = inp
 		self.action_space = inp.action_space
 		self.observation_space = inp.observation_space
-
+		
 	def step(self, action):
 		state, reward, done, _ = self.inp.step(action)
 		state = self.rgb2gray(state)
+		state = self.stack_frames(state)
 		return state / 255., reward, done, _
 
 	def rgb2gray(self, rgb):
@@ -204,7 +205,12 @@ class Normalize():
 		return np.concatenate((np.expand_dims(gray,axis=-1),np.expand_dims(a,axis=-1)), axis=3)
 
 	def reset(self):
-		return self.rgb2gray(self.inp.reset()) / 255.
+		self.state = self.rgb2gray(self.inp.reset())
+		state = self.rgb2gray(self.inp.reset())
+		return np.concatenate((self.state, state), axis=3) / 255.
+
+	def stack_frames(self, next_state):
+		return np.concatenate((self.state[:,:,:,-2:], next_state), axis=3)
 
 	def seed(self, val):
 		self.inp.seed(val)
