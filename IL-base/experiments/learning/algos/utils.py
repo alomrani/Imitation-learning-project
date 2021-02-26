@@ -198,13 +198,13 @@ class Normalize():
 		state = self.rgb2gray(state)
 		return state / 255., reward, done, _
 
-def rgb2gray(self, rgb):
-    r, g, b, a = rgb[:,:,:,0], rgb[:,:,:,1], rgb[:,:,:,2], rgb[:,:,:,3]
-    gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
-    return np.concatenat((gray,a), axis=3)
+	def rgb2gray(self, rgb):
+		r, g, b, a = rgb[:,:,:,0], rgb[:,:,:,1], rgb[:,:,:,2], rgb[:,:,:,3]
+		gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
+		return np.concatenate((np.expand_dims(gray,axis=-1),np.expand_dims(a,axis=-1)), axis=3)
 
 	def reset(self):
-		return self.inp.reset() / 255.
+		return self.rgb2gray(self.inp.reset()) / 255.
 
 	def seed(self, val):
 		self.inp.seed(val)
