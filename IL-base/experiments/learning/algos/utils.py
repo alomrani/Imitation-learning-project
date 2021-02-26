@@ -195,7 +195,13 @@ class Normalize():
 
 	def step(self, action):
 		state, reward, done, _ = self.inp.step(action)
+		state = self.rgb2gray(state)
 		return state / 255., reward, done, _
+
+def rgb2gray(self, rgb):
+    r, g, b, a = rgb[:,:,:,0], rgb[:,:,:,1], rgb[:,:,:,2], rgb[:,:,:,3]
+    gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
+    return np.concatenat((gray,a), axis=3)
 
 	def reset(self):
 		return self.inp.reset() / 255.
