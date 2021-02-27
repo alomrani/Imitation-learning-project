@@ -105,7 +105,7 @@ if __name__ == "__main__":
     # exit()
 
     env_name = ARGS.env+"-aviary-v0"
-    sa_env_kwargs = dict(aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act)
+    sa_env_kwargs = dict(aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act, gui=True)
     # train_env = gym.make(env_name, aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act) # single environment instead of a vectorized one    
     if env_name == "takeoff-aviary-v0":
         train_env_name = TakeoffAviary
