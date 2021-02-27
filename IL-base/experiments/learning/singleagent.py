@@ -144,7 +144,7 @@ if __name__ == "__main__":
         state_dim = train_env.observation_space.shape[0]
         train_env = algos.utils.Base(train_env)
     else:
-        state_dim = 4#train_env.observation_space.shape[2]
+        state_dim = 6#train_env.observation_space.shape[2]
         train_env = algos.utils.Normalize(train_env)
     action_dim = train_env.action_space.shape[0] 
     max_action = float(train_env.action_space.high[0])
