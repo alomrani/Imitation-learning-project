@@ -9,6 +9,7 @@ To run the script, type in a terminal:
 
 """
 import os
+os.environ['OMP_NUM_THREADS'] = '1'
 import time
 from datetime import datetime
 import argparse
@@ -17,6 +18,7 @@ import copy
 import ruamel.yaml as yaml
 import subprocess
 import gym
+from PIL import Image
 import numpy as np
 import torch
 from stable_baselines3.common.env_checker import check_env
@@ -31,9 +33,18 @@ from gym_pybullet_drones.envs.single_agent_rl.TuneAviary import TuneAviary
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ActionType, ObservationType
 
 import shared_constants
+# import torch.multiprocessing as mp
+# mp.set_start_method('spawn',force=True)
+
+os.sched_setaffinity(os.getpid(), {0})
+os.system("taskset -p 0xffffffffffffffffffffffff %d" % os.getpid())
 
 EPISODE_REWARD_THRESHOLD = -0 # Upperbound: rewards are always negative, but non-zero
 """float: Reward threshold to halt the script."""
+
+def get_configs(args):
+    return './configs/'+args.configs+'/'+args.configs+'_'+args.env+'_'+args.obs+'.yaml'
+
 
 def eval_policy(policy, train_env, seed, eval_episodes=5):
 	eval_env = train_env
@@ -56,11 +67,12 @@ def eval_policy(policy, train_env, seed, eval_episodes=5):
 
 def build_parser():
     parser = argparse.ArgumentParser(description='Single agent reinforcement learning experiments script')
-    parser.add_argument('--configs', type=str, default='configs/defaults.yaml',
-                     nargs='+', required=True)
-    parser.add_argument("--save_model", action="store_true")        # Save model and optimizer parameters
+    parser.add_argument('--configs', type=str, default='SAC')
+    parser.add_argument("--env", type=str, default='hover') 
+    parser.add_argument("--obs", type=str, default='kin')
     args, remaining = parser.parse_known_args()
-    config_ = yaml.safe_load((pathlib.Path(__file__).parent / args.configs[0]).read_text())
+    conf_str = get_configs(args)
+    config_ = yaml.safe_load(open(conf_str, 'r'))
     parser = argparse.ArgumentParser()
     for key, value in config_.items():
         if key=='obs':
@@ -80,7 +92,7 @@ if __name__ == "__main__":
     logger = algos.utils.Logger(ARGS)
 
     #### Save directory ########################################
-    filename = os.path.dirname(os.path.abspath(__file__))+'/results/save-'+ARGS.env+'-'+ARGS.algo+'-'+ARGS.obs.value+'-'+ARGS.act.value+'-'+datetime.now().strftime("%m.%d.%Y_%H.%M.%S")
+    filename = os.path.dirname(os.path.abspath(__file__))+'/results/save-'+ARGS.env+'-'+ARGS.configs+'-'+ARGS.obs.value+'-'+ARGS.act.value+'-'+datetime.now().strftime("%m.%d.%Y_%H.%M.%S")
     if not os.path.exists(filename):
         os.makedirs(filename+'/')
 
@@ -97,7 +109,7 @@ if __name__ == "__main__":
     if ARGS.act == ActionType.TUN and ARGS.env != 'tune' :
         print("[ERROR] ActionType.TUN is only compatible with TuneAviary")
         exit()
-    if ARGS.algo in ['sac', 'td3', 'ddpg'] and ARGS.cpu!=1: 
+    if ARGS.configs in ['SAC', 'TD3', 'DDPG'] and ARGS.cpu!=1: 
         print("[ERROR] The selected algorithm does not support multiple environments")
         exit()
 
@@ -130,8 +142,9 @@ if __name__ == "__main__":
 
     if ARGS.obs== ObservationType.KIN:
         state_dim = train_env.observation_space.shape[0]
+        train_env = algos.utils.Base(train_env)
     else:
-        state_dim = train_env.observation_space.shape[2]
+        state_dim = 4#train_env.observation_space.shape[2]
         train_env = algos.utils.Normalize(train_env)
     action_dim = train_env.action_space.shape[0] 
     max_action = float(train_env.action_space.high[0])
@@ -148,14 +161,14 @@ if __name__ == "__main__":
         "policy_freq" : ARGS.policy_freq
     }
 
-    model = getattr(algos, ARGS.algo)(**kwargs)
+    model = getattr(algos, ARGS.configs)(**kwargs)
 
 
     if ARGS.load_model != "":
         policy_file = filename if ARGS.load_model == "default" else ARGS.load_model
         model.load(policy_file)
 
-    replay_buffer = algos.utils.ReplayBuffer(train_env.observation_space.shape, action_dim, ARGS.max_timesteps)
+    replay_buffer = algos.utils.ReplayBuffer(train_env.observation_space.shape, action_dim, 40000) #ARGS.max_timesteps
 
     # Evaluate untrained policy
     evaluations = [eval_policy(model, train_env, ARGS.seed)]
@@ -210,8 +223,8 @@ if __name__ == "__main__":
             if ARGS.save_model: model.save(filename)
             logger.log_data()
         
-        if (t+1) % ARGS.record_freq == 0 and ARGS.obs==ObservationType.RGB:
-            algos.utils.record_video(ARGS, model, train_env, ARGS.seed, shared_constants, filename)
+        if (t+1) % ARGS.record_freq == 0:
+            train_env.record_video(ARGS, model, ARGS.seed, shared_constants, filename)
 
     logger.res_plot(filename)
     logger.save_logs(filename)

@@ -27,7 +27,7 @@ Another thing, the base models currently make use of kinematic state inputs (vec
 ## Requirements and Installation
 The repo was written using *Python 3.7* and tested on *Ubuntu 18.04*
 
-### On and *Ubuntu*
+### On *Ubuntu*
 Major dependencies are [`gym`](https://gym.openai.com/docs/),  [`pybullet`](https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/edit#), 
 [`stable-baselines3`](https://stable-baselines3.readthedocs.io/en/master/guide/quickstart.html), and [`rllib`](https://docs.ray.io/en/master/rllib.html)
 
@@ -55,19 +55,22 @@ $ pip3 install -e .
 
 Our project is implemented using the [`singleagent.py`](experiments/learning/singleagent.py) file. This is a common file which will run all our implementations upon integration. 
 
-To run a `DDPG` agent on the `takeoff` task use the following-
+To run an `SAC` agent on the `takeoff` task with `rgb` images use the following-
 
 ```
-python singleagent.py --configs configs/defaults.yaml --algo DDPG --env takeoff
+python singleagent.py --configs SAC --env takeoff --obs rgb
 ```
 
-This will train the agent for `1e6` timesteps and save models in the [`results`](experiments/learning/results) folder. 
+This will train the agent for `1e5` timesteps and save results in the [`results`](experiments/learning/results) folder. 
 
-The default settings will train a `TD3` agent on the `hover` task as per the following-
+The default settings will train a `SAC` agent on the `hover` task with `kin` feature inputs as per the following-
 
 ```
-python singleagent.py --configs configs/defaults.yaml
+python singleagent.py
 ```
+
+Custom implementations can be trained using config files in their respective directories in the `config` folder.  
+
 *NOTE FOR MASTER BRANCH- Do not change the files until a major change is required. Make changes to your branch first. IF they work then we will incorporate them in the master branch.*  
 
 ## Changes
