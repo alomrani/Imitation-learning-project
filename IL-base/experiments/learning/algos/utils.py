@@ -196,8 +196,8 @@ class Normalize():
 	def step(self, action):
 		state, reward, done, _ = self.inp.step(action)
 		state = self.rgb2gray(state)
-		state = self.stack_frames(state)
-		return state / 255., reward, done, _
+		self.state = self.stack_frames(state)
+		return self.state / 255., reward, done, _
 
 	def rgb2gray(self, rgb):
 		r, g, b, a = rgb[:,:,:,0], rgb[:,:,:,1], rgb[:,:,:,2], rgb[:,:,:,3]
