@@ -55,15 +55,15 @@ $ pip3 install -e .
 
 Our project is implemented using the [`singleagent.py`](experiments/learning/singleagent.py) file. This is a common file which will run all our implementations upon integration. 
 
-To run an `SAC` agent on the `takeoff` task use the following-
+To run an `SAC` agent on the `takeoff` task with `rgb` images use the following-
 
 ```
-python singleagent.py --configs SAC --env takeoff
+python singleagent.py --configs SAC --env takeoff --obs rgb
 ```
 
 This will train the agent for `1e5` timesteps and save results in the [`results`](experiments/learning/results) folder. 
 
-The default settings will train a `SAC` agent on the `hover` task as per the following-
+The default settings will train a `SAC` agent on the `hover` task with `kin` feature inputs as per the following-
 
 ```
 python singleagent.py
