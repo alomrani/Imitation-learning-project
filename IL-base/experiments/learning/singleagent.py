@@ -69,7 +69,7 @@ def build_parser():
     parser = argparse.ArgumentParser(description='Single agent reinforcement learning experiments script')
     parser.add_argument('--configs', type=str, default='SAC')
     parser.add_argument("--env", type=str, default='hover') 
-    parser.add_argument("--obs", type=str, default='kin')
+    parser.add_argument("--obs", type=ObservationType, default='kin')
     args, remaining = parser.parse_known_args()
     conf_str = get_configs(args)
     config_ = yaml.safe_load(open(conf_str, 'r'))
