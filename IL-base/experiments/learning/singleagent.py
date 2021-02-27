@@ -43,8 +43,7 @@ EPISODE_REWARD_THRESHOLD = -0 # Upperbound: rewards are always negative, but non
 """float: Reward threshold to halt the script."""
 
 def get_configs(args):
-    print('./configs/'+args.configs+'/'+args.configs+'_'+args.env+'.yaml')
-    return './configs/'+args.configs+'/'+args.configs+'_'+args.env+'.yaml'
+    return './configs/'+args.configs+'/'+args.configs+'_'+args.env+'_'+args.obs+'.yaml'
 
 
 def eval_policy(policy, train_env, seed, eval_episodes=5):
@@ -70,6 +69,7 @@ def build_parser():
     parser = argparse.ArgumentParser(description='Single agent reinforcement learning experiments script')
     parser.add_argument('--configs', type=str, default='SAC')
     parser.add_argument("--env", type=str, default='hover') 
+    parser.add_argument("--obs", type=str, default='kin')
     args, remaining = parser.parse_known_args()
     conf_str = get_configs(args)
     config_ = yaml.safe_load(open(conf_str, 'r'))
