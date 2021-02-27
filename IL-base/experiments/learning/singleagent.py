@@ -168,7 +168,7 @@ if __name__ == "__main__":
         policy_file = filename if ARGS.load_model == "default" else ARGS.load_model
         model.load(policy_file)
 
-    replay_buffer = algos.utils.ReplayBuffer(train_env.observation_space.shape, action_dim, 40000) #ARGS.max_timesteps
+    replay_buffer = algos.utils.ReplayBuffer(train_env.observation_space.shape, action_dim, 100000) #ARGS.max_timesteps
 
     # Evaluate untrained policy
     evaluations = [eval_policy(model, train_env, ARGS.seed)]
