@@ -1,7 +1,7 @@
 configs: 'SAC' # choices=['TD3', 'DDPG', 'SAC']
 env: 'hover' # choices=['takeoff', 'hover', 'flythrugate', 'tune']
 seed: 105
-obs: 'kin' # rgb
+obs: 'rgb' # rgb
 act: 'one_d_rpm'
 cpu: 1
 start_timesteps: 500 # Time steps initial random policy is used

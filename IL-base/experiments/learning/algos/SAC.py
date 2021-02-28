@@ -21,7 +21,7 @@ class Encoder(nn.Module):
     def __init__(self, state_dim):
         super(Encoder, self).__init__()
         self.state_dim = state_dim
-        self.detach = True
+        self.detach = False
         self.features = nn.Sequential(
             nn.Conv2d(state_dim, 32, kernel_size=3, stride=2),
             nn.ReLU(),
