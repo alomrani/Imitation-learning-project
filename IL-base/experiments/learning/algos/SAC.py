@@ -7,9 +7,9 @@ from torch.distributions import Normal
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ObservationType
 
 LOG_SIG_MAX = 2
-LOG_SIG_MIN = -20
+LOG_SIG_MIN = -5
 epsilon = 1e-6
-hidden_size = 1024
+hidden_size = 512
 encoder_size = 512
 
 def weights_init_(m):
