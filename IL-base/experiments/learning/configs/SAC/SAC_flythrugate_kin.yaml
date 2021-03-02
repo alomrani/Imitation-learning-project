@@ -1,8 +1,8 @@
 configs: 'SAC' # choices=['TD3', 'DDPG', 'SAC']
-env: 'hover' # choices=['takeoff', 'hover', 'flythrugate', 'tune']
+env: 'flythrugate' # choices=['takeoff', 'hover', 'flythrugate', 'tune']
 seed: 105
 obs: 'kin' # rgb
-act: 'one_d_rpm'
+act: 'rpm'
 cpu: 1
 start_timesteps: 500 # Time steps initial random policy is used
 eval_freq: 1000 # How often (time steps) we evaluate
