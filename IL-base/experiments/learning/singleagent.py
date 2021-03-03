@@ -209,7 +209,7 @@ if __name__ == "__main__":
         episode_reward += reward
 
         # Train agent after collecting sufficient data
-        if t >= ARGS.start_timesteps and len(replay_buffer)>ARGS.batch_size:
+        if t >= ARGS.start_timesteps:
             actor_loss, critic_loss = model.train(replay_buffer, ARGS.batch_size)
 
         if done: 

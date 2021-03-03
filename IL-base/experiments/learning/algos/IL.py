@@ -5,6 +5,7 @@ import algos
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Normal
+from gym_pybullet_drones.envs.BaseAviary import DroneModel, BaseAviary
 from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
 from gym_pybullet_drones.envs.single_agent_rl.HoverAviary import HoverAviary
 from gym_pybullet_drones.envs.single_agent_rl.ZigZagAviary import ZigZagAviary
@@ -115,12 +116,8 @@ class IL(object):
         self.gamma = discount
         self.tau = tau
         self.alpha = args.alpha
-        self.num_exp_episodes = 1
+        self.num_exp_episodes = 5
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        if self.args.env=="flythrugate":
-            self.target_pos = [1,0,0]
-        else:
-            self.target_pos = [0,0,1]
 
         env_name = self.args.env+"-aviary-v0"
         sa_env_kwargs = dict(aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=self.args.obs, act=self.args.act)
@@ -167,20 +164,22 @@ class IL(object):
         return action.detach().cpu().numpy()[0]
     
     def collect_data(self, replay_buffer):
-        ctrl = DSLPIDControl(drone_model="cf2x")
         for _ in range(self.num_exp_episodes):
             state, done = self.train_env.reset(), False
+            total_reward = 0
+            steps = 0
             while done==False:
-                action = ctrl.computeControlFromState(control_timestep=self.train_env.TIMESTEP, state=state, target_pos=self.target_pos)
+                steps += 1
                 next_state, reward, done, _ = self.train_env.step(action)
                 replay_buffer.add(state, action, next_state, reward, done)
                 state = next_state
+                total_reward += reward
 
 
     def train(self, replay_buffer, batch_size):
         # Collect data from expert
         with torch.no_grad():
-            collect_data(replay_buffer)
+            self.collect_data(replay_buffer)
         # Sample a batch from memory
         state, exp_action, next_state, reward, not_done = replay_buffer.sample(batch_size)
         action = self.actor(state)
@@ -190,6 +189,7 @@ class IL(object):
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
+        print(actor_loss)
 
         return actor_loss.item(), _
 
