@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Normal
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ObservationType
+from gym_pybullet_drones.control.DSLPIDControl import DSLPIDControl
 from stable_baselines3.common.cmd_util import make_vec_env
 import shared_constants
 
@@ -165,10 +166,11 @@ class IL(object):
         return action.detach().cpu().numpy()[0]
     
     def collect_data(self, replay_buffer):
+        ctrl = DSLPIDControl(drone_model="cf2x")
         for _ in range(self.num_exp_episodes):
             state, done = self.train_env.reset(), False
             while done==False:
-                action = (state)
+                action = ctrl.computeControlFromState(control_timestep=self.train_env.TIMESTEP, state=state, target_pos=[0,0,1])
                 next_state, reward, done, _ = self.train_env.step(action)
                 replay_buffer.add(state, action, next_state, reward, done)
                 state = next_state
