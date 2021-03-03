@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Normal
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ObservationType
+import shared_constants
 
 LOG_SIG_MAX = 2
 LOG_SIG_MIN = -5
@@ -117,12 +118,41 @@ class IL(object):
         self.tau = tau
         self.alpha = args.alpha
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        env_name = self.args.env+"-aviary-v0"
+        sa_env_kwargs = dict(aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=self.args.obs, act=self.args.act)
 
-        if args.obs==ObservationType.KIN:
+        if env_name == "takeoff-aviary-v0":
+            train_env_name = TakeoffAviary
+
+        elif env_name == "hover-aviary-v0":
+            train_env_name = HoverAviary
+
+        elif env_name == "zigzag-aviary-v0":
+            train_env_name = ZigZagAviary
+
+        elif env_name == "flythrugate-aviary-v0":
+            train_env_name = FlyThruGateAviary
+
+        elif env_name == "tune-aviary-v0":
+            train_env_name = TuneAviary
+
+        self.train_env = make_vec_env(train_env_name,
+                                    env_kwargs=sa_env_kwargs,
+                                    n_envs=self.args.cpu,
+                                    seed=0
+                                    )
+
+        self.action_dim = self.train_env.action_space.shape[0] 
+        if self.args.obs== ObservationType.KIN:
+            self.state_dim = train_env.observation_space.shape[0]
+            self.train_env = algos.utils.Base(self.train_env)
             self.actor = Actor(state_dim, action_dim).to(self.device)
         else:
+            self.state_dim = 4#train_env.observation_space.shape[2]
+            self.train_env = algos.utils.Normalize(self.train_env)
             self.actor = ActorCNN(state_dim, action_dim).to(self.device)
+
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=self.args.lr)
 
@@ -131,7 +161,7 @@ class IL(object):
         state = torch.FloatTensor(state).to(self.device)
         action = self.actor(state)
         return action.detach().cpu().numpy()[0]
-
+    
     def collect_data(self, replay_buffer, env):
 
 
