@@ -1,10 +1,16 @@
 import copy
 import numpy as np
 import torch
+import algos
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Normal
-from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ObservationType
+from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
+from gym_pybullet_drones.envs.single_agent_rl.HoverAviary import HoverAviary
+from gym_pybullet_drones.envs.single_agent_rl.ZigZagAviary import ZigZagAviary
+from gym_pybullet_drones.envs.single_agent_rl.FlyThruGateAviary import FlyThruGateAviary
+from gym_pybullet_drones.envs.single_agent_rl.TuneAviary import TuneAviary
+from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ActionType, ObservationType
 from gym_pybullet_drones.control.DSLPIDControl import DSLPIDControl
 from stable_baselines3.common.cmd_util import make_vec_env
 import shared_constants
@@ -73,11 +79,6 @@ class ActorCNN(nn.Module):
         x = torch.tanh(self.linear3(x))
         return x
 
-    def to(self, device):
-        self.action_scale = self.action_scale.to(device)
-        self.action_bias = self.action_bias.to(device)
-        return super(ActorCNN, self).to(device)
-
 
 class Actor(nn.Module):
     def __init__(self, num_inputs, num_actions):
@@ -94,11 +95,6 @@ class Actor(nn.Module):
         x = F.relu(self.linear2(x))
         x = F.tanh(self.linear3(x))
         return x
-
-    def to(self, device):
-        self.action_scale = self.action_scale.to(device)
-        self.action_bias = self.action_bias.to(device)
-        return super(Actor, self).to(device)
 
 
 class IL(object):
@@ -120,6 +116,11 @@ class IL(object):
         self.tau = tau
         self.alpha = args.alpha
         self.num_exp_episodes = 1
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if self.args.env=="flythrugate":
+            self.target_pos = [1,0,0]
+        else:
+            self.target_pos = [0,0,1]
 
         env_name = self.args.env+"-aviary-v0"
         sa_env_kwargs = dict(aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=self.args.obs, act=self.args.act)
@@ -147,7 +148,7 @@ class IL(object):
 
         self.action_dim = self.train_env.action_space.shape[0] 
         if self.args.obs== ObservationType.KIN:
-            self.state_dim = train_env.observation_space.shape[0]
+            self.state_dim = self.train_env.observation_space.shape[0]
             self.train_env = algos.utils.Base(self.train_env)
             self.actor = Actor(state_dim, action_dim).to(self.device)
         else:
@@ -170,7 +171,7 @@ class IL(object):
         for _ in range(self.num_exp_episodes):
             state, done = self.train_env.reset(), False
             while done==False:
-                action = ctrl.computeControlFromState(control_timestep=self.train_env.TIMESTEP, state=state, target_pos=[0,0,1])
+                action = ctrl.computeControlFromState(control_timestep=self.train_env.TIMESTEP, state=state, target_pos=self.target_pos)
                 next_state, reward, done, _ = self.train_env.step(action)
                 replay_buffer.add(state, action, next_state, reward, done)
                 state = next_state
