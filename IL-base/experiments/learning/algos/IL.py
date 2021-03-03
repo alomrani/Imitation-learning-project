@@ -5,6 +5,8 @@ import algos
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Normal
+from algos.SAC import Actor as SACActor
+from algos.SAC import ActorCNN as SACActorCNN
 from gym_pybullet_drones.envs.BaseAviary import DroneModel, BaseAviary
 from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
 from gym_pybullet_drones.envs.single_agent_rl.HoverAviary import HoverAviary
@@ -12,7 +14,6 @@ from gym_pybullet_drones.envs.single_agent_rl.ZigZagAviary import ZigZagAviary
 from gym_pybullet_drones.envs.single_agent_rl.FlyThruGateAviary import FlyThruGateAviary
 from gym_pybullet_drones.envs.single_agent_rl.TuneAviary import TuneAviary
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ActionType, ObservationType
-from gym_pybullet_drones.control.DSLPIDControl import DSLPIDControl
 from stable_baselines3.common.cmd_util import make_vec_env
 import shared_constants
 
@@ -148,10 +149,14 @@ class IL(object):
             self.state_dim = self.train_env.observation_space.shape[0]
             self.train_env = algos.utils.Base(self.train_env)
             self.actor = Actor(state_dim, action_dim).to(self.device)
+            self.expert= SACActor(state_dim, action_dim).to(self.device)
+            self.expert.load_state_dict("experts/"+self.args.env+"_"+self.args.obs)
         else:
             self.state_dim = 4#train_env.observation_space.shape[2]
             self.train_env = algos.utils.Normalize(self.train_env)
             self.actor = ActorCNN(state_dim, action_dim).to(self.device)
+            self.expert= SACActorCNN(state_dim, action_dim).to(self.device)
+            self.expert.load_state_dict("experts/"+self.args.env+"_"+self.args.obs)
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
