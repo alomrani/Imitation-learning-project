@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Normal
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ObservationType
+from stable_baselines3.common.cmd_util import make_vec_env
 import shared_constants
 
 LOG_SIG_MAX = 2
@@ -117,6 +118,7 @@ class IL(object):
         self.gamma = discount
         self.tau = tau
         self.alpha = args.alpha
+        self.num_exp_episodes = 1
 
         env_name = self.args.env+"-aviary-v0"
         sa_env_kwargs = dict(aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=self.args.obs, act=self.args.act)
@@ -162,14 +164,20 @@ class IL(object):
         action = self.actor(state)
         return action.detach().cpu().numpy()[0]
     
-    def collect_data(self, replay_buffer, env):
+    def collect_data(self, replay_buffer):
+        for _ in range(self.num_exp_episodes):
+            state, done = self.train_env.reset(), False
+            while done==False:
+                action = (state)
+                next_state, reward, done, _ = self.train_env.step(action)
+                replay_buffer.add(state, action, next_state, reward, done)
+                state = next_state
 
 
     def train(self, replay_buffer, batch_size):
         # Collect data from expert
         with torch.no_grad():
-            env = 
-            collect_data(replay_buffer, env)
+            collect_data(replay_buffer)
         # Sample a batch from memory
         state, exp_action, next_state, reward, not_done = replay_buffer.sample(batch_size)
         action = self.actor(state)
