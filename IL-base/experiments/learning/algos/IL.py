@@ -150,13 +150,14 @@ class IL(object):
             self.train_env = algos.utils.Base(self.train_env)
             self.actor = Actor(state_dim, action_dim).to(self.device)
             self.expert= SACActor(state_dim, action_dim).to(self.device)
-            self.expert.load_state_dict("experts/"+self.args.env+"_"+self.args.obs)
+            print("experts/"+self.args.env+"_kin")
+            self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_kin"))
         else:
             self.state_dim = 4#train_env.observation_space.shape[2]
             self.train_env = algos.utils.Normalize(self.train_env)
             self.actor = ActorCNN(state_dim, action_dim).to(self.device)
             self.expert= SACActorCNN(state_dim, action_dim).to(self.device)
-            self.expert.load_state_dict("experts/"+self.args.env+"_"+self.args.obs)
+            self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_rgb"))
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -172,9 +173,8 @@ class IL(object):
         for _ in range(self.num_exp_episodes):
             state, done = self.train_env.reset(), False
             total_reward = 0
-            steps = 0
             while done==False:
-                steps += 1
+                action = self.expert(torch.FloatTensor(state).to(self.device))
                 next_state, reward, done, _ = self.train_env.step(action)
                 replay_buffer.add(state, action, next_state, reward, done)
                 state = next_state
