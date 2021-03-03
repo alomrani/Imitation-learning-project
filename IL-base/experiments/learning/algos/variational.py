@@ -161,18 +161,19 @@ class Variational(object):
         self.agent = agent
         self.state_dim = state_dim
         self.action_dim = action_dim
-        if args.act==ObservationType.KIN:
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if args.obs==ObservationType.KIN:
             self.approx = Actor(state_dim, action_dim).to(self.device)
         else:
             self.approx = ActorCNN(state_dim, action_dim).to(self.device)
-        self.approx.encoder.copy_conv_weights_from(self.agent.encoder)
+            self.approx.encoder.copy_conv_weights_from(self.agent.encoder)
         self.approx_optimizer = torch.optim.Adam(self.approx.parameters(), lr=self.args.lr)
     
     def train(self, state, exp_action):
         action, log_pi, _ = self.agent.sample(state)
         _, log_q, _ = self.approx.sample(state, exp_action)
 
-        obj = log_q + self.alpha*log_pi
+        obj = -(log_q + self.args.alpha*log_pi).mean()
 
         self.approx_optimizer.zero_grad()
         obj.backward()
