@@ -250,6 +250,7 @@ class SAC(object):
         # self.actor_scheduler = torch.optim.lr_scheduler.MultiplicativeLR(self.actor_optimizer, lr_lambda=decay_lr)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=self.args.lr)
         # self.critic_scheduler = torch.optim.lr_scheduler.MultiplicativeLR(self.critic_optimizer, lr_lambda=decay_lr)
+        var_obj = Variational(self.args, self.actor, state_dim, action_dim)
 
         self.critic_target = copy.deepcopy(self.critic)
 
@@ -270,11 +271,13 @@ class SAC(object):
         for _ in range(self.args.num_updates):
             state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
 
+            int_mot = vasr_obj.train(state, action)
+
             with torch.no_grad():
                 next_action, next_log_pi, _ = self.actor.sample(next_state)
                 qf1_next_target, qf2_next_target = self.critic_target(next_state, next_action)
                 min_qf_next_target = torch.min(qf1_next_target, qf2_next_target) - self.alpha * next_log_pi
-                next_q_value = reward + not_done * self.gamma * (min_qf_next_target)
+                next_q_value = reward + int_mot + not_done * self.gamma * (min_qf_next_target)
             qf1, qf2 = self.critic(state, action)  # Two Q-functions to mitigate positive bias in the policy improvement step
             qf1_loss = F.mse_loss(qf1, next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
             qf2_loss = F.mse_loss(qf2, next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
