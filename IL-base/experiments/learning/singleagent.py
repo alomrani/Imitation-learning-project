@@ -28,6 +28,7 @@ import algos
 
 from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
 from gym_pybullet_drones.envs.single_agent_rl.HoverAviary import HoverAviary
+from gym_pybullet_drones.envs.single_agent_rl.ZigZagAviary import ZigZagAviary
 from gym_pybullet_drones.envs.single_agent_rl.FlyThruGateAviary import FlyThruGateAviary
 from gym_pybullet_drones.envs.single_agent_rl.TuneAviary import TuneAviary
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ActionType, ObservationType
@@ -103,7 +104,7 @@ if __name__ == "__main__":
     if ARGS.act == ActionType.ONE_D_RPM or ARGS.act == ActionType.ONE_D_DYN or ARGS.act == ActionType.ONE_D_PID:
         print("\n\n\n[WARNING] Simplified 1D problem for debugging purposes\n\n\n")
     #### Errors ################################################
-        if not ARGS.env in ['takeoff', 'hover']: 
+        if not ARGS.env in ['takeoff', 'hover', 'zigzag']: 
             print("[ERROR] 1D action space is only compatible with Takeoff and HoverAviary")
             exit()
     if ARGS.act == ActionType.TUN and ARGS.env != 'tune' :
@@ -125,6 +126,9 @@ if __name__ == "__main__":
     elif env_name == "hover-aviary-v0":
         train_env_name = HoverAviary
 
+    elif env_name == "zigzag-aviary-v0":
+        train_env_name = ZigZagAviary
+
     elif env_name == "flythrugate-aviary-v0":
         train_env_name = FlyThruGateAviary
 
@@ -144,7 +148,7 @@ if __name__ == "__main__":
         state_dim = train_env.observation_space.shape[0]
         train_env = algos.utils.Base(train_env)
     else:
-        state_dim = 6#train_env.observation_space.shape[2]
+        state_dim = 4#train_env.observation_space.shape[2]
         train_env = algos.utils.Normalize(train_env)
     action_dim = train_env.action_space.shape[0] 
     max_action = float(train_env.action_space.high[0])
@@ -168,7 +172,7 @@ if __name__ == "__main__":
         policy_file = filename if ARGS.load_model == "default" else ARGS.load_model
         model.load(policy_file)
 
-    replay_buffer = algos.utils.ReplayBuffer(train_env.observation_space.shape, action_dim, 40000) #ARGS.max_timesteps
+    replay_buffer = algos.utils.ReplayBuffer(train_env.observation_space.shape, action_dim, 100000) #ARGS.max_timesteps
 
     # Evaluate untrained policy
     evaluations = [eval_policy(model, train_env, ARGS.seed)]
