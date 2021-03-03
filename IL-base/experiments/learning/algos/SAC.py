@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Normal
-from variational import Variational
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ObservationType
 
 LOG_SIG_MAX = 2

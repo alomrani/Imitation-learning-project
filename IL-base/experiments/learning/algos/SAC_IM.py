@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Normal
-from variational import Variational
+from algos.variational import Variational
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ObservationType
 
 LOG_SIG_MAX = 2
@@ -211,7 +211,7 @@ class Critic(nn.Module):
 		return q1, q2
 
 
-class SAC(object):
+class SAC_IM(object):
     def __init__(
 		self,
 		args, 
