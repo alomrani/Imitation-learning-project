@@ -113,10 +113,6 @@ class Logger():
 	def normalize_rewards(self):	
 		self.log['average_rewards'] -= min(self.log['average_rewards'])
 		self.log['rewards'] -= min(self.log['rewards'])
-		self.log['average_rewards'] /= max(self.log['average_rewards'])
-		self.log['rewards'] /= max(self.log['rewards'])
-		self.log['average_rewards'] *= 100
-		self.log['rewards'] *= 100
 		return self.log
 
 def record_video(args, policy, eval_env, seed, shared_constants, filename):
