@@ -1,15 +1,15 @@
 configs: 'SAC' # choices=['TD3', 'DDPG', 'SAC']
-env: 'flythrugate' # choices=['takeoff', 'hover', 'flythrugate', 'tune']
+env: 'hover' # choices=['takeoff', 'hover', 'flythrugate', 'tune']
 seed: 105
 obs: 'kin' # rgb
-act: 'rpm'
+act: 'one_d_rpm'
 cpu: 1
 start_timesteps: 2000 # Time steps initial random policy is used
 eval_freq: 1000 # How often (time steps) we evaluate
-max_timesteps: 500000 # Max time steps to run environment
+max_timesteps: 200000 # Max time steps to run environment
 expl_noise: 0.1 # Std of Gaussian exploration noise
 batch_size: 1024 # Batch size for both actor and critic
-lr: 0.00003 # learning for actor & critic
+lr: 0.003 # learning for actor & critic
 discount: 0.99 # Discount factor
 tau: 0.005 # Target network update rate
 policy_noise: 0.2 # Noise added to target policy
@@ -18,7 +18,7 @@ policy_freq: 2 # Frequency of delayed policy updates
 save_model: False #"store_true" # Save model and optimizer parameters
 load_model: "" # Model load file name, "" doesn't load, 
 window_size: 20 # average range for plottting
-record_freq: 100000 # frequency for video recording
+record_freq: 50000 # frequency for video recording
 alpha: 0.001 # temperature parameter for SAC
 target_update_interval: 2 # update interval for SAC critic
 automatic_entropy_tuning: False # tune temp parameter for SAC

@@ -9,7 +9,7 @@ eval_freq: 1000 # How often (time steps) we evaluate
 max_timesteps: 500000 # Max time steps to run environment
 expl_noise: 0.1 # Std of Gaussian exploration noise
 batch_size: 1024 # Batch size for both actor and critic
-lr: 0.00003 # learning for actor & critic
+lr: 0.003 # learning for actor & critic
 discount: 0.99 # Discount factor
 tau: 0.005 # Target network update rate
 policy_noise: 0.2 # Noise added to target policy

@@ -202,13 +202,14 @@ if __name__ == "__main__":
         done_bool = float(done) #float(done) if episode_timesteps < train_env._max_episode_steps else 0
 
         # Store data in replay buffer
-        replay_buffer.add(state, action, next_state, reward, done_bool)
+        if ARGS.configs!='IL':
+            replay_buffer.add(state, action, next_state, reward, done_bool)
 
         state = next_state
         episode_reward += reward
 
         # Train agent after collecting sufficient data
-        if t >= ARGS.start_timesteps and len(replay_buffer)>ARGS.batch_size:
+        if t >= ARGS.start_timesteps:
             actor_loss, critic_loss = model.train(replay_buffer, ARGS.batch_size)
 
         if done: 
