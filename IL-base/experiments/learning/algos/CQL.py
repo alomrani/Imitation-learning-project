@@ -371,7 +371,7 @@ class CQL(object):
             # self.critic_optimizer.step()
             # self.critic_scheduler.step()
 
-            # pi, log_pi, _ = self.actor.sample(state)
+            pi, log_pi, _ = self.actor.sample(state)
 
             # qf1_pi, qf2_pi = self.critic(state, pi)
             # min_qf_pi = torch.min(qf1_pi, qf2_pi)
@@ -395,7 +395,7 @@ class CQL(object):
                 alpha_loss = torch.tensor(0.).to(self.device)
 
             ## add CQL
-            random_actions_tensor = torch.FloatTensor(qf2.shape[0] * self.num_random, self.action_dim).uniform_(-1, 1) # .cuda()
+            random_actions_tensor = torch.FloatTensor(qf2.shape[0] * self.num_random, self.action_dim).uniform_(-1, 1).to(self.device) # .cuda()
             curr_actions_tensor, curr_log_pis = self._get_policy_actions(state, num_actions=self.num_random, network=self.actor)
             new_curr_actions_tensor, new_log_pis = self._get_policy_actions(next_state, num_actions=self.num_random, network=self.actor)
             q1_rand, q2_rand = self._get_tensor_values(state, random_actions_tensor, network=self.critic)
@@ -420,7 +420,6 @@ class CQL(object):
                 cat_q2 = torch.cat(
                     [q2_rand - random_density, q2_next_actions - new_log_pis.detach(), q2_curr_actions - curr_log_pis.detach()], 1
                 )
-
             min_qf1_loss = torch.logsumexp(cat_q1 / self.temp, dim=1,).mean() * self.min_q_weight * self.temp
             min_qf2_loss = torch.logsumexp(cat_q2 / self.temp, dim=1,).mean() * self.min_q_weight * self.temp
 
@@ -460,7 +459,7 @@ class CQL(object):
             # self.qf2_optimizer.step()
 
             # self._num_policy_update_steps += 1
-            pi, log_pi, _ = self.actor.sample(state)
+            # pi, log_pi, _ = self.actor.sample(state)
 
             qf1_pi, qf2_pi = self.critic(state, pi)
             min_qf_pi = torch.min(qf1_pi, qf2_pi)
