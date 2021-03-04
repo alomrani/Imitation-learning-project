@@ -117,8 +117,9 @@ class IL(object):
         self.gamma = discount
         self.tau = tau
         self.alpha = args.alpha
-        self.num_exp_episodes = 5
+        self.num_exp_episodes = 50
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.total_it = 0
 
         env_name = self.args.env+"-aviary-v0"
         sa_env_kwargs = dict(aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=self.args.obs, act=self.args.act)
@@ -148,15 +149,15 @@ class IL(object):
         if self.args.obs== ObservationType.KIN:
             self.state_dim = self.train_env.observation_space.shape[0]
             self.train_env = algos.utils.Base(self.train_env)
-            self.actor = Actor(state_dim, action_dim).to(self.device)
-            self.expert= SACActor(state_dim, action_dim).to(self.device)
+            self.actor = Actor(state_dim, self.action_dim).to(self.device)
+            self.expert= SACActor(state_dim, self.action_dim).to(self.device)
             print("experts/"+self.args.env+"_kin")
             self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_kin"))
         else:
             self.state_dim = 4#train_env.observation_space.shape[2]
             self.train_env = algos.utils.Normalize(self.train_env)
-            self.actor = ActorCNN(state_dim, action_dim).to(self.device)
-            self.expert= SACActorCNN(state_dim, action_dim).to(self.device)
+            self.actor = ActorCNN(state_dim, self.action_dim).to(self.device)
+            self.expert= SACActorCNN(state_dim, self.action_dim).to(self.device)
             self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_rgb"))
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -174,17 +175,18 @@ class IL(object):
             state, done = self.train_env.reset(), False
             total_reward = 0
             while done==False:
-                action = self.expert(torch.FloatTensor(state).to(self.device))
-                next_state, reward, done, _ = self.train_env.step(action)
+                action, _, _ = self.expert.sample(torch.FloatTensor(state).to(self.device))
+                next_state, reward, done, _ = self.train_env.step(action.detach().cpu().numpy()[0])
                 replay_buffer.add(state, action, next_state, reward, done)
                 state = next_state
                 total_reward += reward
+        print("Expert Data Collected")
 
 
     def train(self, replay_buffer, batch_size):
         # Collect data from expert
-        with torch.no_grad():
-            self.collect_data(replay_buffer)
+        if self.total_it%10000==0:
+            self.prefill_buffer(replay_buffer, batch_size)
         # Sample a batch from memory
         state, exp_action, next_state, reward, not_done = replay_buffer.sample(batch_size)
         action = self.actor(state)
@@ -194,9 +196,13 @@ class IL(object):
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
-        print(actor_loss)
+        self.total_it += 1
 
-        return actor_loss.item(), _
+        return actor_loss.item(), 0
+
+    def prefill_buffer(self, replay_buffer, batch_size):
+        print("Filling Dataset...")
+        self.collect_data(replay_buffer)
 
     def save(self, filename):
         torch.save(self.actor.state_dict(), filename + "/_actor")
