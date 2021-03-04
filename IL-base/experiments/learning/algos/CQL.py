@@ -306,7 +306,7 @@ class CQL(object):
             self.alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=self.args.lr)
         if self.with_lagrange:
             self.target_action_gap = self.lagrange_thresh
-            self.log_alpha_prime = torch.zeros(1, requires_grad=True).to(self.device)
+            self.log_alpha_prime = torch.zeros(1, requires_grad=True, device=self.device)
             self.alpha_prime_optimizer = torch.optim.Adam(
                 [self.log_alpha_prime],
                 lr=self.args.lr,
