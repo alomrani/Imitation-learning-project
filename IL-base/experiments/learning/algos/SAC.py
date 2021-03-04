@@ -9,55 +9,79 @@ from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import Obser
 LOG_SIG_MAX = 2
 LOG_SIG_MIN = -5
 epsilon = 1e-6
-hidden_size = 1024
+hidden_size = 512
+encoder_size = 512
 
 def weights_init_(m):
     if isinstance(m, nn.Linear):
         torch.nn.init.xavier_uniform_(m.weight, gain=1)
         torch.nn.init.constant_(m.bias, 0)
 
-class ActorCNN(nn.Module):
-	def __init__(self, state_dim, action_dim, max_action):
-		super(ActorCNN, self).__init__()
-		self.state_dim = state_dim
-		self.action_dim = action_dim
-			self.features = nn.Sequential(
-			nn.Conv2d(state_dim, 32, kernel_size=8, stride=4, padding=0),
-			n.ReLU(),
-			nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
-			n.ReLU(),
-			n.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
-			n.ReLU()
-		)
-		self.mean_fc = nn.Sequential(
-			nn.Linear(512, 256),
-			nn.ReLU(),
-			nn.Linear(256, action_dim)
-		)
-		self.std_fc = nn.Sequential(
-			nn.Linear(512, 256),
-			nn.ReLU(),
-			nn.Linear(256, action_dim)
-		)
-		self.max_action = max_action
-		# action rescaling
-		# if action_space is None:
-		#     self.action_scale = torch.tensor(1.)
-		#     self.action_bias = torch.tensor(0.)
-		# else:
-		self.action_scale = torch.tensor(
-			1.)
-		self.action_bias = torch.tensor(
-			1.)
+class Encoder(nn.Module):
+    def __init__(self, state_dim):
+        super(Encoder, self).__init__()
+        self.state_dim = state_dim
+        self.detach = False
+        self.features = nn.Sequential(
+            nn.Conv2d(state_dim, 32, kernel_size=3, stride=2),
+            nn.ReLU(),
+            nn.Conv2d(32, 32, kernel_size=3, stride=1),
+            nn.ReLU(),
+            nn.Conv2d(32, 32, kernel_size=3, stride=1),
+            nn.ReLU(),
+            nn.Conv2d(32, 32, kernel_size=3, stride=1),
+            nn.ReLU()
+        )
+        self.fc = nn.Sequential(
+            nn.Linear(32*425, encoder_size),
+            nn.LayerNorm(encoder_size)
+        )
 
-	def forward(self, x):
-		x = self.features(x.transpose(1,3))
-		x = x.view(x.size(0), -1)
-		mean = self.mean_fc(x)
-        log_std = self.std_fc(x)
+    def forward(self, x):
+        x = self.features(x.transpose(1,3))
+        x = x.view(x.size(0), -1)
+        if self.detach:
+            x.detach()
+        x = self.fc(x)
+        return x
+
+    def copy_conv_weights_from(self, source):
+        """Tie convolutional layers"""
+        for layer in range(len(self.features),2):
+            self.features[layer].weight = source.features[layer].weight
+            self.features[layer].bias = source.features[layer].bias
+
+
+class ActorCNN(nn.Module):
+    def __init__(self, num_inputs, num_actions):
+        super(ActorCNN, self).__init__()
+        self.encoder = Encoder(num_inputs)
+        self.linear1 = nn.Linear(encoder_size, hidden_size)
+        self.linear2 = nn.Linear(hidden_size, hidden_size)
+
+        self.mean_linear = nn.Linear(hidden_size, num_actions)
+        self.log_std_linear = nn.Linear(hidden_size, num_actions)
+
+        self.apply(weights_init_)
+
+        # action rescaling
+        # if action_space is None:
+        #     self.action_scale = torch.tensor(1.)
+        #     self.action_bias = torch.tensor(0.)
+        # else:
+        self.action_scale = torch.tensor(
+            1.)
+        self.action_bias = torch.tensor(
+            1.)
+
+    def forward(self, state):
+        x = self.encoder(state)
+        x = F.relu(self.linear1(x))
+        x = F.relu(self.linear2(x))
+        mean = self.mean_linear(x)
+        log_std = self.log_std_linear(x)
         log_std = torch.clamp(log_std, min=LOG_SIG_MIN, max=LOG_SIG_MAX)
         return mean, log_std
-		# return self.max_action * torch.tanh(x)
 
     def sample(self, state):
         mean, log_std = self.forward(state)
@@ -73,46 +97,40 @@ class ActorCNN(nn.Module):
         mean = torch.tanh(mean) * self.action_scale + self.action_bias
         return action, log_prob, mean
 
+    def to(self, device):
+        self.action_scale = self.action_scale.to(device)
+        self.action_bias = self.action_bias.to(device)
+        return super(ActorCNN, self).to(device)
 
 
 class CriticCNN(nn.Module):
-	def __init__(self, state_dim, action_dim):
-		super(CriticCNN, self).__init__()
-		self.state_dim = state_dim
-		self.action_dim = action_dim
-		self.features = nn.Sequential(
-			nn.Conv2d(state_dim, 32, kernel_size=8, stride=4, padding=0),
-			nn.ReLU(),
-			nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
-			nn.ReLU(),
-			nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
-			nn.ReLU()
-		)
-		self.fc1 = nn.Sequential(
-			nn.Linear(512+self.action_dim, 256),
-			nn.ReLU(),
-			nn.Linear(256, 1)
-		)
-		self.fc2 = nn.Sequential(
-			nn.Linear(512+self.action_dim, 256),
-			nn.ReLU(),
-			nn.Linear(256, 1)
-		)
+    def __init__(self, state_dim, action_dim):
+        super(CriticCNN, self).__init__()
+        self.encoder = Encoder(state_dim)
+        # Q1 architecture
+        self.l1 = nn.Linear(encoder_size + action_dim, hidden_size)
+        self.l2 = nn.Linear(hidden_size, hidden_size)
+        self.l3 = nn.Linear(hidden_size, 1)
 
-	def forward(self, x, action):
-		x = self.features(x.transpose(1,3))
-		x = x.view(x.size(0), -1)
-		sa = torch.cat([x, action], axis=1)
-		q1 = self.fc1(sa)
-		q2 = self.fc2(sa)
-		return q1, q2
+        # Q2 architecture
+        self.l4 = nn.Linear(encoder_size + action_dim, hidden_size)
+        self.l5 = nn.Linear(hidden_size, hidden_size)
+        self.l6 = nn.Linear(hidden_size, 1)
 
-	def Q1(self, x, action):
-		x = self.features(x.transpose(1,3))
-		x = x.view(x.size(0), -1)
-		sa = torch.cat([x, action], axis=1)
-		q1 = self.fc1(sa)
-		return q1
+
+    def forward(self, state, action):
+        enc_state = self.encoder(state)
+        sa = torch.cat([enc_state, action], 1)
+
+        q1 = F.relu(self.l1(sa))
+        q1 = F.relu(self.l2(q1))
+        q1 = self.l3(q1)
+
+        q2 = F.relu(self.l4(sa))
+        q2 = F.relu(self.l5(q2))
+        q2 = self.l6(q2)
+        return q1, q2
+
 
 class Actor(nn.Module):
     def __init__(self, num_inputs, num_actions):
@@ -222,20 +240,22 @@ class SAC(object):
             self.actor = Actor(state_dim, action_dim).to(self.device)
             self.critic = Critic(state_dim, action_dim).to(device=self.device)
         else:
-        	self.actor = ActorCNN(state_dim, action_dim, max_action).to(self.device)
-        	self.critic = CriticCNN(state_dim, action_dim).to(self.device)
+            self.actor = ActorCNN(state_dim, action_dim).to(self.device)
+            self.critic = CriticCNN(state_dim, action_dim).to(self.device)
+            self.actor.encoder.copy_conv_weights_from(self.critic.encoder)
 
-        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
-
-        self.critic = Critic(state_dim, action_dim).to(device=self.device)
-        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4)
+        # decay_lr = lambda epoch: 0.9999
+        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=self.args.lr)
+        # self.actor_scheduler = torch.optim.lr_scheduler.MultiplicativeLR(self.actor_optimizer, lr_lambda=decay_lr)
+        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=self.args.lr)
+        # self.critic_scheduler = torch.optim.lr_scheduler.MultiplicativeLR(self.critic_optimizer, lr_lambda=decay_lr)
 
         self.critic_target = copy.deepcopy(self.critic)
 
         if self.automatic_entropy_tuning is True:
             self.target_entropy = -torch.prod(torch.Tensor(action_dim).to(self.device)).item()
             self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
-            self.alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=3e-4)
+            self.alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=self.args.lr)
 
 
     def select_action(self, state):
@@ -262,6 +282,7 @@ class SAC(object):
             self.critic_optimizer.zero_grad()
             critic_loss.backward()
             self.critic_optimizer.step()
+            # self.critic_scheduler.step()
 
             pi, log_pi, _ = self.actor.sample(state)
 
@@ -273,6 +294,7 @@ class SAC(object):
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
             self.actor_optimizer.step()
+            # self.actor_scheduler.step()
 
             if self.automatic_entropy_tuning:
                 alpha_loss = -(self.log_alpha * (log_pi + self.target_entropy).detach()).mean()

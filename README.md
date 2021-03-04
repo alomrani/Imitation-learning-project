@@ -2,6 +2,7 @@
 
 ## Updates
 
+*Feb 28*- Completed functioning of SAC in `SAC.py`.   
 *Feb 22*- Added custom utilities to `utils.py` with CNN Policies in `DDPG.py` and `TD3.py`.   
 *Feb 18*- [`IL code base`](IL-base/) is available. Refer to README and start programming.  
 *Feb 16*- Proposal is complete. Midterm report due March 10.  
