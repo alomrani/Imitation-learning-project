@@ -3,8 +3,20 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.distributions import MultivariateNormal
 from torch.distributions import Normal
-from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ObservationType
+from algos.SAC import Actor as SACActor
+from algos.SAC import ActorCNN as SACActorCNN
+from gym_pybullet_drones.envs.BaseAviary import DroneModel, BaseAviary
+from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
+from gym_pybullet_drones.envs.single_agent_rl.HoverAviary import HoverAviary
+from gym_pybullet_drones.envs.single_agent_rl.ZigZagAviary import ZigZagAviary
+from gym_pybullet_drones.envs.single_agent_rl.FlyThruGateAviary import FlyThruGateAviary
+from gym_pybullet_drones.envs.single_agent_rl.TuneAviary import TuneAviary
+from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ActionType, ObservationType
+from stable_baselines3.common.cmd_util import make_vec_env
+import shared_constants
+import algos
 
 LOG_SIG_MAX = 2
 LOG_SIG_MIN = -5
@@ -16,6 +28,7 @@ def weights_init_(m):
     if isinstance(m, nn.Linear):
         torch.nn.init.xavier_uniform_(m.weight, gain=1)
         torch.nn.init.constant_(m.bias, 0)
+
 
 class Encoder(nn.Module):
     def __init__(self, state_dim):
@@ -117,7 +130,6 @@ class CriticCNN(nn.Module):
         self.l5 = nn.Linear(hidden_size, hidden_size)
         self.l6 = nn.Linear(hidden_size, 1)
 
-
     def forward(self, state, action):
         enc_state = self.encoder(state)
         sa = torch.cat([enc_state, action], 1)
@@ -135,7 +147,7 @@ class CriticCNN(nn.Module):
 class Actor(nn.Module):
     def __init__(self, num_inputs, num_actions):
         super(Actor, self).__init__()
-        
+
         self.linear1 = nn.Linear(num_inputs, hidden_size)
         self.linear2 = nn.Linear(hidden_size, hidden_size)
 
@@ -228,21 +240,54 @@ class CQL(object):
         self.gamma = discount
         self.tau = tau
         self.alpha = args.alpha
-
+        self.num_exp_episodes = 50
         self.total_it = 0
-
+        self.min_q_version = 3
         self.target_update_interval = args.target_update_interval
         self.automatic_entropy_tuning = args.automatic_entropy_tuning
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+        env_name = self.args.env+"-aviary-v0"
+        sa_env_kwargs = dict(aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=self.args.obs, act=self.args.act)
 
-        if args.obs==ObservationType.KIN:
+        if env_name == "takeoff-aviary-v0":
+            train_env_name = TakeoffAviary
+
+        elif env_name == "hover-aviary-v0":
+            train_env_name = HoverAviary
+
+        elif env_name == "zigzag-aviary-v0":
+            train_env_name = ZigZagAviary
+
+        elif env_name == "flythrugate-aviary-v0":
+            train_env_name = FlyThruGateAviary
+
+        elif env_name == "tune-aviary-v0":
+            train_env_name = TuneAviary
+
+        self.train_env = make_vec_env(train_env_name,
+                                    env_kwargs=sa_env_kwargs,
+                                    n_envs=self.args.cpu,
+                                    seed=0
+                                    )
+
+        self.action_dim = self.train_env.action_space.shape[0] 
+        if self.args.obs== ObservationType.KIN:
+            self.state_dim = self.train_env.observation_space.shape[0]
+            self.train_env = algos.utils.Base(self.train_env)
             self.actor = Actor(state_dim, action_dim).to(self.device)
             self.critic = Critic(state_dim, action_dim).to(device=self.device)
+            self.expert= SACActor(state_dim, self.action_dim).to(self.device)
+            print("experts/"+self.args.env+"_kin")
+            self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_kin"))
         else:
-            self.actor = ActorCNN(state_dim, action_dim).to(self.device)
-            self.critic = CriticCNN(state_dim, action_dim).to(self.device)
+            self.state_dim = 4 #train_env.observation_space.shape[2]
+            self.train_env = algos.utils.Normalize(self.train_env)
+            self.actor = Actor(state_dim, action_dim).to(self.device)
+            self.critic = Critic(state_dim, action_dim).to(device=self.device)
             self.actor.encoder.copy_conv_weights_from(self.critic.encoder)
+            self.expert= SACActorCNN(state_dim, self.action_dim).to(self.device)
+            self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_rgb"))
 
         # decay_lr = lambda epoch: 0.9999
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=self.args.lr)
@@ -282,7 +327,22 @@ class CQL(object):
         # else:
         return new_obs_actions
 
+    def collect_data(self, replay_buffer):
+        for _ in range(self.num_exp_episodes):
+            state, done = self.train_env.reset(), False
+            total_reward = 0
+            while done==False:
+                action, _, _ = self.expert.sample(torch.FloatTensor(state).to(self.device))
+                next_state, reward, done, _ = self.train_env.step(action.detach().cpu().numpy()[0])
+                replay_buffer.add(state, action, next_state, reward, done)
+                state = next_state
+                total_reward += reward
+        print("Expert Data Collected")
+
     def train(self, replay_buffer, batch_size):
+        # Collect data from expert
+        if self.total_it%10000==0:
+            self.prefill_buffer(replay_buffer, batch_size)
         self.total_it += 1
         # Sample a batch from memory
         for _ in range(self.args.num_updates):
@@ -343,8 +403,8 @@ class CQL(object):
             cat_q2 = torch.cat(
                 [q2_rand, qf2.unsqueeze(1), q2_next_actions, q2_curr_actions], 1
             )
-            std_q1 = torch.std(cat_q1, dim=1)
-            std_q2 = torch.std(cat_q2, dim=1)
+            # std_q1 = torch.std(cat_q1, dim=1)
+            # std_q2 = torch.std(cat_q2, dim=1)
 
             if self.min_q_version == 3:
                 # importance sammpled version
@@ -430,7 +490,9 @@ class CQL(object):
         torch.save(self.actor.state_dict(), filename + "/_actor")
         torch.save(self.actor_optimizer.state_dict(), filename + "/_actor_optimizer")
 
-
+    def prefill_buffer(self, replay_buffer, batch_size):
+        print("Filling Dataset...")
+        self.collect_data(replay_buffer)
     def load(self, filename):
         self.critic.load_state_dict(torch.load(filename + "/_critic"))
         self.critic_optimizer.load_state_dict(torch.load(filename + "/_critic_optimizer"))
