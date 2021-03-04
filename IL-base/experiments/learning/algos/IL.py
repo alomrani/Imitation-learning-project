@@ -177,6 +177,7 @@ class IL(object):
             while done==False:
                 action, _, _ = self.expert.sample(torch.FloatTensor(state).to(self.device))
                 next_state, reward, done, _ = self.train_env.step(action.detach().cpu().numpy()[0])
+                done = float(done)
                 replay_buffer.add(state, action, next_state, reward, done)
                 state = next_state
                 total_reward += reward
