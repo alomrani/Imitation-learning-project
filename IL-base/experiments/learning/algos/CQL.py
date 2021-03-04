@@ -130,6 +130,7 @@ class CriticCNN(nn.Module):
         self.l5 = nn.Linear(hidden_size, hidden_size)
         self.l6 = nn.Linear(hidden_size, 1)
 
+
     def forward(self, state, action):
         enc_state = self.encoder(state)
         sa = torch.cat([enc_state, action], 1)
@@ -147,7 +148,7 @@ class CriticCNN(nn.Module):
 class Actor(nn.Module):
     def __init__(self, num_inputs, num_actions):
         super(Actor, self).__init__()
-
+        
         self.linear1 = nn.Linear(num_inputs, hidden_size)
         self.linear2 = nn.Linear(hidden_size, hidden_size)
 
@@ -195,31 +196,29 @@ class Actor(nn.Module):
 
 
 class Critic(nn.Module):
-	def __init__(self, state_dim, action_dim):
-		super(Critic, self).__init__()
+    def __init__(self, state_dim, action_dim):
+        super(Critic, self).__init__()
 
-		# Q1 architecture
-		self.l1 = nn.Linear(state_dim + action_dim, hidden_size)
-		self.l2 = nn.Linear(hidden_size, hidden_size)
-		self.l3 = nn.Linear(hidden_size, 1)
+        # Q1 architecture
+        self.l1 = nn.Linear(state_dim + action_dim, hidden_size)
+        self.l2 = nn.Linear(hidden_size, hidden_size)
+        self.l3 = nn.Linear(hidden_size, 1)
 
-		# Q2 architecture
-		self.l4 = nn.Linear(state_dim + action_dim, hidden_size)
-		self.l5 = nn.Linear(hidden_size, hidden_size)
-		self.l6 = nn.Linear(hidden_size, 1)
+        # Q2 architecture
+        self.l4 = nn.Linear(state_dim + action_dim, hidden_size)
+        self.l5 = nn.Linear(hidden_size, hidden_size)
+        self.l6 = nn.Linear(hidden_size, 1)
 
+    def forward(self, state, action):
+        sa = torch.cat([state, action], 1)
+        q1 = F.relu(self.l1(sa))
+        q1 = F.relu(self.l2(q1))
+        q1 = self.l3(q1)
 
-	def forward(self, state, action):
-		sa = torch.cat([state, action], 1)
-
-		q1 = F.relu(self.l1(sa))
-		q1 = F.relu(self.l2(q1))
-		q1 = self.l3(q1)
-
-		q2 = F.relu(self.l4(sa))
-		q2 = F.relu(self.l5(q2))
-		q2 = self.l6(q2)
-		return q1, q2
+        q2 = F.relu(self.l4(sa))
+        q2 = F.relu(self.l5(q2))
+        q2 = self.l6(q2)
+        return q1, q2
 
 
 class CQL(object):
@@ -235,7 +234,10 @@ class CQL(object):
 		noise_clip=0.5,
 		policy_freq=2
 	):
-
+        self.temp = 1.0
+        self.min_q_weight = 1.0
+        self.lagrange_thresh = 0.0
+        self.with_lagrange = True
         self.args = args
         self.gamma = discount
         self.tau = tau
@@ -246,6 +248,7 @@ class CQL(object):
         self.target_update_interval = args.target_update_interval
         self.automatic_entropy_tuning = args.automatic_entropy_tuning
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.num_random = 10
 
         env_name = self.args.env+"-aviary-v0"
         sa_env_kwargs = dict(aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=self.args.obs, act=self.args.act)
@@ -275,19 +278,19 @@ class CQL(object):
         if self.args.obs== ObservationType.KIN:
             self.state_dim = self.train_env.observation_space.shape[0]
             self.train_env = algos.utils.Base(self.train_env)
-            self.actor = Actor(state_dim, action_dim).to(self.device)
-            self.critic = Critic(state_dim, action_dim).to(device=self.device)
+            self.actor = Actor(state_dim, self.action_dim).to(self.device)
+            self.critic = Critic(state_dim, self.action_dim).to(device=self.device)
             self.expert= SACActor(state_dim, self.action_dim).to(self.device)
             print("experts/"+self.args.env+"_kin")
-            self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_kin"))
+            # self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_kin"))
         else:
             self.state_dim = 4 #train_env.observation_space.shape[2]
             self.train_env = algos.utils.Normalize(self.train_env)
-            self.actor = Actor(state_dim, action_dim).to(self.device)
-            self.critic = Critic(state_dim, action_dim).to(device=self.device)
+            self.actor = Actor(state_dim, self.action_dim).to(self.device)
+            self.critic = Critic(state_dim, self.action_dim).to(device=self.device)
             self.actor.encoder.copy_conv_weights_from(self.critic.encoder)
             self.expert= SACActorCNN(state_dim, self.action_dim).to(self.device)
-            self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_rgb"))
+            # self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_rgb"))
 
         # decay_lr = lambda epoch: 0.9999
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=self.args.lr)
@@ -301,6 +304,13 @@ class CQL(object):
             self.target_entropy = -torch.prod(torch.Tensor(action_dim).to(self.device)).item()
             self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
             self.alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=self.args.lr)
+        if self.with_lagrange:
+            self.target_action_gap = self.lagrange_thresh
+            self.log_alpha_prime = torch.zeros(1, requires_grad=True)
+            self.alpha_prime_optimizer = torch.optim.Adam(
+                [self.log_alpha_prime],
+                lr=self.args.lr,
+            )
 
 
     def select_action(self, state):
@@ -312,20 +322,17 @@ class CQL(object):
         action_shape = actions.shape[0]
         obs_shape = obs.shape[0]
         num_repeat = int (action_shape / obs_shape)
-        obs_temp = obs.unsqueeze(1).repeat(1, num_repeat, 1).view(obs_shape * num_repeat, obs.shape[1])
+        obs_temp = obs.unsqueeze(1).repeat(1, num_repeat, 1).view(obs.shape[0] * num_repeat, obs.shape[1])
         preds = network(obs_temp, actions)
-        preds = preds.view(obs_shape, num_repeat, 1)
-        return preds
+        return preds[0].view(obs_shape, num_repeat, 1), preds[1].view(obs_shape, num_repeat, 1)
 
     def _get_policy_actions(self, obs, num_actions, network=None):
         obs_temp = obs.unsqueeze(1).repeat(1, num_actions, 1).view(obs.shape[0] * num_actions, obs.shape[1])
-        new_obs_actions, _, _, new_obs_log_pi, *_ = network(
-            obs_temp, reparameterize=True, return_log_prob=True,
-        )
+        new_obs_actions, new_obs_log_pi, _ = network.sample(obs_temp)
         # if not self.discrete:
         #     return new_obs_actions, new_obs_log_pi.view(obs.shape[0], num_actions, 1)
         # else:
-        return new_obs_actions
+        return new_obs_actions, new_obs_log_pi.view(obs.shape[0], num_actions, 1)
 
     def collect_data(self, replay_buffer):
         for _ in range(self.num_exp_episodes):
@@ -334,6 +341,7 @@ class CQL(object):
             while done==False:
                 action, _, _ = self.expert.sample(torch.FloatTensor(state).to(self.device))
                 next_state, reward, done, _ = self.train_env.step(action.detach().cpu().numpy()[0])
+                done = float(done)
                 replay_buffer.add(state, action, next_state, reward, done)
                 state = next_state
                 total_reward += reward
@@ -353,7 +361,7 @@ class CQL(object):
                 qf1_next_target, qf2_next_target = self.critic_target(next_state, next_action)
                 min_qf_next_target = torch.min(qf1_next_target, qf2_next_target) - self.alpha * next_log_pi
                 next_q_value = reward + not_done * self.gamma * (min_qf_next_target)
-            qf1, qf2 = self.critic(state, action)  # Two Q-functions to mitigate positive bias in the policy improvement step
+            qf1, qf2 = self.critic(state, action.unsqueeze(1))  # Two Q-functions to mitigate positive bias in the policy improvement step
             qf1_loss = F.mse_loss(qf1, next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
             qf2_loss = F.mse_loss(qf2, next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
             critic_loss = qf1_loss + qf2_loss
@@ -387,15 +395,12 @@ class CQL(object):
                 alpha_loss = torch.tensor(0.).to(self.device)
 
             ## add CQL
-            random_actions_tensor = torch.FloatTensor(qf2.shape[0] * self.num_random, action.shape[-1]).uniform_(-1, 1) # .cuda()
-            curr_actions_tensor, curr_log_pis = self._get_policy_actions(state.T, num_actions=self.num_random, network=self.policy)
-            new_curr_actions_tensor, new_log_pis = self._get_policy_actions(next_state.T, num_actions=self.num_random, network=self.policy)
-            q1_rand = self._get_tensor_values(state.T, random_actions_tensor, network=self.qf1)
-            q2_rand = self._get_tensor_values(state.T, random_actions_tensor, network=self.qf2)
-            q1_curr_actions = self._get_tensor_values(state.T, curr_actions_tensor, network=self.qf1)
-            q2_curr_actions = self._get_tensor_values(state.T, curr_actions_tensor, network=self.qf2)
-            q1_next_actions = self._get_tensor_values(state.T, new_curr_actions_tensor, network=self.qf1)
-            q2_next_actions = self._get_tensor_values(state.T, new_curr_actions_tensor, network=self.qf2)
+            random_actions_tensor = torch.FloatTensor(qf2.shape[0] * self.num_random, self.action_dim).uniform_(-1, 1) # .cuda()
+            curr_actions_tensor, curr_log_pis = self._get_policy_actions(state, num_actions=self.num_random, network=self.actor)
+            new_curr_actions_tensor, new_log_pis = self._get_policy_actions(next_state, num_actions=self.num_random, network=self.actor)
+            q1_rand, q2_rand = self._get_tensor_values(state, random_actions_tensor, network=self.critic)
+            q1_curr_actions, q2_curr_actions = self._get_tensor_values(state, curr_actions_tensor, network=self.critic)
+            q1_next_actions, q2_next_actions = self._get_tensor_values(state, new_curr_actions_tensor, network=self.critic)
 
             cat_q1 = torch.cat(
                 [q1_rand, qf1.unsqueeze(1), q1_next_actions, q1_curr_actions], 1
@@ -446,13 +451,13 @@ class CQL(object):
             """
             # Update the Q-functions iff 
             # self._num_q_update_steps += 1
-            self.qf1_optimizer.zero_grad()
-            qf1_loss.backward(retain_graph=True)
-            self.qf1_optimizer.step()
+            # self.qf1_optimizer.zero_grad()
+            # qf1_loss.backward(retain_graph=True)
+            # self.qf1_optimizer.step()
 
-            self.qf2_optimizer.zero_grad()
-            qf2_loss.backward(retain_graph=True)
-            self.qf2_optimizer.step()
+            # self.qf2_optimizer.zero_grad()
+            # qf2_loss.backward(retain_graph=True)
+            # self.qf2_optimizer.step()
 
             # self._num_policy_update_steps += 1
             pi, log_pi, _ = self.actor.sample(state)
