@@ -77,11 +77,6 @@ class ActorCNN(nn.Module):
 
         self.apply(weights_init_)
 
-        # action rescaling
-        # if action_space is None:
-        #     self.action_scale = torch.tensor(1.)
-        #     self.action_bias = torch.tensor(0.)
-        # else:
         self.action_scale = torch.tensor(
             1.)
         self.action_bias = torch.tensor(
@@ -157,11 +152,6 @@ class Actor(nn.Module):
 
         self.apply(weights_init_)
 
-        # action rescaling
-        # if action_space is None:
-        #     self.action_scale = torch.tensor(1.)
-        #     self.action_bias = torch.tensor(0.)
-        # else:
         self.action_scale = torch.tensor(
             1.)
         self.action_bias = torch.tensor(
@@ -329,9 +319,6 @@ class CQL(object):
     def _get_policy_actions(self, obs, num_actions, network=None):
         obs_temp = obs.unsqueeze(1).repeat(1, num_actions, 1).view(obs.shape[0] * num_actions, obs.shape[1])
         new_obs_actions, new_obs_log_pi, _ = network.sample(obs_temp)
-        # if not self.discrete:
-        #     return new_obs_actions, new_obs_log_pi.view(obs.shape[0], num_actions, 1)
-        # else:
         return new_obs_actions, new_obs_log_pi.view(obs.shape[0], num_actions, 1)
 
     def collect_data(self, replay_buffer):
@@ -365,23 +352,6 @@ class CQL(object):
             qf1_loss = F.mse_loss(qf1, next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
             qf2_loss = F.mse_loss(qf2, next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
             critic_loss = qf1_loss + qf2_loss
-
-            # self.critic_optimizer.zero_grad()
-            # critic_loss.backward()
-            # self.critic_optimizer.step()
-            # self.critic_scheduler.step()
-
-            # pi, log_pi, _ = self.actor.sample(state)
-
-            # qf1_pi, qf2_pi = self.critic(state, pi)
-            # min_qf_pi = torch.min(qf1_pi, qf2_pi)
-
-            # actor_loss = ((self.alpha * log_pi) - min_qf_pi).mean() # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]
-
-            # self.actor_optimizer.zero_grad()
-            # actor_loss.backward()
-            # self.actor_optimizer.step()
-            # self.actor_scheduler.step()
 
             if self.automatic_entropy_tuning:
                 alpha_loss = -(self.log_alpha * (log_pi + self.target_entropy).detach()).mean()
