@@ -118,7 +118,7 @@ if __name__ == "__main__":
     # exit()
 
     env_name = ARGS.env+"-aviary-v0"
-    sa_env_kwargs = dict(aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act, gui=True)
+    sa_env_kwargs = dict(aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act)
     # train_env = gym.make(env_name, aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act) # single environment instead of a vectorized one    
     if env_name == "takeoff-aviary-v0":
         train_env_name = TakeoffAviary
@@ -202,7 +202,7 @@ if __name__ == "__main__":
         done_bool = float(done) #float(done) if episode_timesteps < train_env._max_episode_steps else 0
 
         # Store data in replay buffer
-        if ARGS.configs not in ['IL','CQL']:
+        if ARGS.configs != 'IL' and ARGS.configs != 'CQL':
             replay_buffer.add(state, action, next_state, reward, done_bool)
 
         state = next_state
