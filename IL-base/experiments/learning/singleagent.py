@@ -202,7 +202,7 @@ if __name__ == "__main__":
         done_bool = float(done) #float(done) if episode_timesteps < train_env._max_episode_steps else 0
 
         # Store data in replay buffer
-        if ARGS.configs != 'IL' and ARGS.configs != 'CQL':
+        if ARGS.configs not in ['IL','CQL']:
             replay_buffer.add(state, action, next_state, reward, done_bool)
 
         state = next_state
