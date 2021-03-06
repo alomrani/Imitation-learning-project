@@ -207,10 +207,10 @@ class Normalize():
 		return self.state / 255., reward, done, _
 
 	def rgb2gray(self, rgb):
-		r, g, b, a = rgb[:,:,:,0], rgb[:,:,:,1], rgb[:,:,:,2], rgb[:,:,:,3]
+		r, g, b, a, d = rgb[:,:,:,0], rgb[:,:,:,1], rgb[:,:,:,2], rgb[:,:,:,3], rgb[:,:,:,4]
 		gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
-		return np.expand_dims(gray, axis=-1)
-		# return np.concatenate((np.expand_dims(gray,axis=-1),np.expand_dims(a,axis=-1)), axis=3)
+		# return np.expand_dims(gray, axis=-1)
+		return np.concatenate((np.expand_dims(gray,axis=-1),np.expand_dims(d,axis=-1)), axis=3)
 
 	def reset(self):
 		self.state = self.rgb2gray(self.inp.reset())
@@ -219,7 +219,7 @@ class Normalize():
 		return self.state
 
 	def stack_frames(self, next_state):
-		return np.concatenate((self.state[:,:,:,-3:], next_state), axis=3)
+		return np.concatenate((self.state[:,:,:,-6:], next_state), axis=3)
 
 	def seed(self, val):
 		self.inp.seed(val)
