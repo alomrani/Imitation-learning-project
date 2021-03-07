@@ -339,10 +339,10 @@ class CQL(object):
             state, done = self.train_env.reset(), False
             total_reward = 0
             while done==False:
-                action, _, _ = self.expert.sample(torch.FloatTensor(state).to(self.device))
+                action, _, _ = self.expert.sample(torch.FloatTensor(state[1]).to(self.device))
                 next_state, reward, done, _ = self.train_env.step(action.detach().cpu().numpy()[0])
                 done = float(done)
-                replay_buffer.add(state, action, next_state, reward, done)
+                replay_buffer.add(state[0], action, next_state[0], reward, done)
                 state = next_state
                 total_reward += reward
         print("Expert Data Collected")
