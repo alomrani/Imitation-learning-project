@@ -54,7 +54,7 @@ def eval_policy(policy, train_env, seed, eval_episodes=5):
 	for _ in range(eval_episodes):
 		state, done = eval_env.reset(), False
 		while not done:
-			action = policy.select_action(np.array(state))
+			action = policy.select_action(np.array(state[0]))
 			state, reward, done, _ = eval_env.step(action)
 			avg_reward += reward
 
@@ -193,7 +193,7 @@ if __name__ == "__main__":
             action = train_env.action_space.sample()
         else:
             action = (
-                model.select_action(np.array(state))
+                model.select_action(np.array(state[0]))
                 + np.random.normal(0, max_action * ARGS.expl_noise, size=action_dim)
             ).clip(-max_action, max_action)
 

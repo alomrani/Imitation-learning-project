@@ -290,7 +290,7 @@ class CQL(object):
             self.critic = CriticCNN(self.state_dim, self.action_dim).to(device=self.device)
             self.actor.encoder.copy_conv_weights_from(self.critic.encoder)
             self.expert= SACActor(self.train_env.observation_space["state"].shape[0], self.action_dim).to(self.device)
-            self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_kin"))
+            self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_kin", map_location=torch.device(self.device)))
 
         # decay_lr = lambda epoch: 0.9999
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=self.args.lr)
