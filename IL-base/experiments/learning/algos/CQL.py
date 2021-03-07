@@ -284,13 +284,13 @@ class CQL(object):
             print("experts/"+self.args.env+"_kin")
             # self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_kin"))
         else:
-            self.state_dim = 8 #train_env.observation_space.shape[2]
+            self.state_dim = 4 #train_env.observation_space.shape[2]
             self.train_env = algos.utils.Normalize(self.train_env)
             self.actor = ActorCNN(self.state_dim, self.action_dim).to(self.device)
             self.critic = CriticCNN(self.state_dim, self.action_dim).to(device=self.device)
             self.actor.encoder.copy_conv_weights_from(self.critic.encoder)
-            self.expert= SACActorCNN(self.state_dim, self.action_dim).to(self.device)
-            # self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_rgb"))
+            self.expert= SACActor(self.state_dim, self.action_dim).to(self.device)
+            self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_kin"))
 
         # decay_lr = lambda epoch: 0.9999
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=self.args.lr)
@@ -340,10 +340,10 @@ class CQL(object):
             state, done = self.train_env.reset(), False
             total_reward = 0
             while done==False:
-                action, _, _ = self.expert.sample(torch.FloatTensor(state[1]).to(self.device))
+                action, _, _ = self.expert.sample(torch.FloatTensor(state["state"]).to(self.device))
                 next_state, reward, done, _ = self.train_env.step(action.detach().cpu().numpy()[0])
                 done = float(done)
-                replay_buffer.add(state[0], action, next_state[0], reward, done)
+                replay_buffer.add(state["rgb"], action, next_state["rgb"], reward, done)
                 state = next_state
                 total_reward += reward
         print("Expert Data Collected")

@@ -120,14 +120,17 @@ class TakeoffAviary(BaseSingleAgentAviary):
 
         """
         if self.OBS_TYPE == ObservationType.RGB:
-            return spaces.Box(low=0,
-                              high=255.,
-                              shape=(self.IMG_RES[1], self.IMG_RES[0], 4),
-                              dtype=np.uint8
-                              ), spaces.Box(low=np.array([-1,-1,0, -1,-1,-1, -1,-1,-1, -1,-1,-1]),
-                              high=np.array([1,1,1, 1,1,1, 1,1,1, 1,1,1]),
-                              dtype=np.float32
-                              )
+            return spaces.Dict({"state": spaces.Box(
+                                            low=np.array([-1,-1,0, -1,-1,-1, -1,-1,-1, -1,-1,-1]),
+                                            high=np.array([1,1,1, 1,1,1, 1,1,1, 1,1,1]),
+                                            dtype=np.float32
+                                        ),
+                                    "rgb": spaces.Box(low=0,
+                                            high=255,
+                                            shape=(self.IMG_RES[1], self.IMG_RES[0], 4),
+                                            dtype=np.uint8
+                                        ),
+            })
         elif self.OBS_TYPE == ObservationType.KIN:
             ############################################################
             #### OBS OF SIZE 20 (WITH QUATERNION AND RPMS)
@@ -170,7 +173,8 @@ class TakeoffAviary(BaseSingleAgentAviary):
                                       )
             # return np.concatenate((self.rgb[0], self.dep[0][:, :, None]), axis=2)
             obs = self._clipAndNormalizeState(self._getDroneStateVector(0))
-            return self.rgb[0], np.hstack([obs[0:3], obs[7:10], obs[10:13], obs[13:16]]).reshape(12,)
+
+            return {"rgb": self.rgb[0], "state": np.hstack([obs[0:3], obs[7:10], obs[10:13], obs[13:16]]).reshape(12,)}
         elif self.OBS_TYPE == ObservationType.KIN: 
             obs = self._clipAndNormalizeState(self._getDroneStateVector(0))
             ############################################################
