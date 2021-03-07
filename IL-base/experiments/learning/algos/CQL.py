@@ -284,12 +284,12 @@ class CQL(object):
             print("experts/"+self.args.env+"_kin")
             # self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_kin"))
         else:
-            self.state_dim = 4 #train_env.observation_space.shape[2]
+            self.state_dim = 8 #train_env.observation_space.shape[2]
             self.train_env = algos.utils.Normalize(self.train_env)
-            self.actor = Actor(state_dim, self.action_dim).to(self.device)
-            self.critic = Critic(state_dim, self.action_dim).to(device=self.device)
+            self.actor = ActorCNN(self.state_dim, self.action_dim).to(self.device)
+            self.critic = CriticCNN(self.state_dim, self.action_dim).to(device=self.device)
             self.actor.encoder.copy_conv_weights_from(self.critic.encoder)
-            self.expert= SACActorCNN(state_dim, self.action_dim).to(self.device)
+            self.expert= SACActorCNN(self.state_dim, self.action_dim).to(self.device)
             # self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_rgb"))
 
         # decay_lr = lambda epoch: 0.9999
@@ -327,6 +327,7 @@ class CQL(object):
         return preds[0].view(obs_shape, num_repeat, 1), preds[1].view(obs_shape, num_repeat, 1)
 
     def _get_policy_actions(self, obs, num_actions, network=None):
+        print(obs.shape)
         obs_temp = obs.unsqueeze(1).repeat(1, num_actions, 1).view(obs.shape[0] * num_actions, obs.shape[1])
         new_obs_actions, new_obs_log_pi, _ = network.sample(obs_temp)
         # if not self.discrete:

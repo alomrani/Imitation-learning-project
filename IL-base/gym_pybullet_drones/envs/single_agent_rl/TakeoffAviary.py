@@ -122,7 +122,7 @@ class TakeoffAviary(BaseSingleAgentAviary):
         if self.OBS_TYPE == ObservationType.RGB:
             return spaces.Box(low=0,
                               high=1000,
-                              shape=(self.IMG_RES[1], self.IMG_RES[0], 4),
+                              shape=(self.IMG_RES[1], self.IMG_RES[0], 5),
                               dtype=np.uint8
                               )
         elif self.OBS_TYPE == ObservationType.KIN:
