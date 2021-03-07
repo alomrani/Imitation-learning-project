@@ -210,6 +210,7 @@ class Critic(nn.Module):
         self.l6 = nn.Linear(hidden_size, 1)
 
     def forward(self, state, action):
+        print(state.shape, action.shape)
         sa = torch.cat([state, action], 1)
         q1 = F.relu(self.l1(sa))
         q1 = F.relu(self.l2(q1))
@@ -281,7 +282,6 @@ class CQL(object):
             self.actor = Actor(state_dim, self.action_dim).to(self.device)
             self.critic = Critic(state_dim, self.action_dim).to(device=self.device)
             self.expert= SACActor(state_dim, self.action_dim).to(self.device)
-            print("experts/"+self.args.env+"_kin")
             # self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_kin"))
         else:
             self.state_dim = 4 #train_env.observation_space.shape[2]
@@ -290,7 +290,7 @@ class CQL(object):
             self.critic = Critic(state_dim, self.action_dim).to(device=self.device)
             self.actor.encoder.copy_conv_weights_from(self.critic.encoder)
             self.expert= SACActorCNN(state_dim, self.action_dim).to(self.device)
-            # self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_rgb"))
+            self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_rgb"))
 
         # decay_lr = lambda epoch: 0.9999
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=self.args.lr)
@@ -342,6 +342,7 @@ class CQL(object):
                 action, _, _ = self.expert.sample(torch.FloatTensor(state).to(self.device))
                 next_state, reward, done, _ = self.train_env.step(action.detach().cpu().numpy()[0])
                 done = float(done)
+                action = action.detach().cpu().numpy()[0]
                 replay_buffer.add(state, action, next_state, reward, done)
                 state = next_state
                 total_reward += reward
@@ -361,7 +362,7 @@ class CQL(object):
                 qf1_next_target, qf2_next_target = self.critic_target(next_state, next_action)
                 min_qf_next_target = torch.min(qf1_next_target, qf2_next_target) - self.alpha * next_log_pi
                 next_q_value = reward + not_done * self.gamma * (min_qf_next_target)
-            qf1, qf2 = self.critic(state, action.unsqueeze(1))  # Two Q-functions to mitigate positive bias in the policy improvement step
+            qf1, qf2 = self.critic(state, action)  # Two Q-functions to mitigate positive bias in the policy improvement step # .unsqueeze(1)
             qf1_loss = F.mse_loss(qf1, next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
             qf2_loss = F.mse_loss(qf2, next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
             critic_loss = qf1_loss + qf2_loss
