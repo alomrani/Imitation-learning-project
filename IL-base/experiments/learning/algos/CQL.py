@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import MultivariateNormal
 from torch.distributions import Normal
+from algos.variational import Variational
 from algos.SAC import Actor as SACActor
 from algos.SAC import ActorCNN as SACActorCNN
 from gym_pybullet_drones.envs.BaseAviary import DroneModel, BaseAviary
@@ -210,7 +211,6 @@ class Critic(nn.Module):
         self.l6 = nn.Linear(hidden_size, 1)
 
     def forward(self, state, action):
-        print(state.shape, action.shape)
         sa = torch.cat([state, action], 1)
         q1 = F.relu(self.l1(sa))
         q1 = F.relu(self.l2(q1))
@@ -282,7 +282,7 @@ class CQL(object):
             self.actor = Actor(state_dim, self.action_dim).to(self.device)
             self.critic = Critic(state_dim, self.action_dim).to(device=self.device)
             self.expert= SACActor(state_dim, self.action_dim).to(self.device)
-            # self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_kin"))
+            self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_kin"))
         else:
             self.state_dim = 4 #train_env.observation_space.shape[2]
             self.train_env = algos.utils.Normalize(self.train_env)
@@ -299,6 +299,7 @@ class CQL(object):
         # self.critic_scheduler = torch.optim.lr_scheduler.MultiplicativeLR(self.critic_optimizer, lr_lambda=decay_lr)
 
         self.critic_target = copy.deepcopy(self.critic)
+        self.var_obj = Variational(self.args, self.actor, state_dim, action_dim)
 
         if self.automatic_entropy_tuning is True:
             self.target_entropy = -torch.prod(torch.Tensor(action_dim).to(self.device)).item()
@@ -357,6 +358,8 @@ class CQL(object):
         for _ in range(self.args.num_updates):
             state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
 
+            int_mot = self.var_obj.train(state, action)
+
             with torch.no_grad():
                 next_action, next_log_pi, _ = self.actor.sample(next_state)
                 qf1_next_target, qf2_next_target = self.critic_target(next_state, next_action)
@@ -402,6 +405,9 @@ class CQL(object):
             q1_rand, q2_rand = self._get_tensor_values(state, random_actions_tensor, network=self.critic)
             q1_curr_actions, q2_curr_actions = self._get_tensor_values(state, curr_actions_tensor, network=self.critic)
             q1_next_actions, q2_next_actions = self._get_tensor_values(state, new_curr_actions_tensor, network=self.critic)
+
+            q1_next_actions -=  - self.args.alpha*int_mot
+            q2_next_actions -=  - self.args.alpha*int_mot
 
             cat_q1 = torch.cat(
                 [q1_rand, qf1.unsqueeze(1), q1_next_actions, q1_curr_actions], 1
