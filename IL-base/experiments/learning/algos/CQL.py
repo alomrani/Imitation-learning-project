@@ -318,6 +318,14 @@ class CQL(object):
         state = torch.FloatTensor(state).to(self.device)
         action, _, _ = self.actor.sample(state)
         return action.detach().cpu().numpy()[0]
+    
+    def approx_logsumexp(self, q):
+        func = torch.logsumexp(q / self.temp, dim=1,).mean()
+        grads = torch.grad(func, retain_graph=True)
+        ones = torch.ones((self.action_dim,self.action_dim))
+        hess_approx = 0.5*(torch.eye(self.action_dim) - (1/(self.action_dim+1))*ones*ones)
+        return func + q*grads + 0.5*q*hess_approx*torch.transpose(q)
+        
 
     def _get_tensor_values(self, obs, actions, network=None):
         action_shape = actions.shape[0]
@@ -369,23 +377,6 @@ class CQL(object):
             qf1_loss = F.mse_loss(qf1, next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
             qf2_loss = F.mse_loss(qf2, next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
             critic_loss = qf1_loss + qf2_loss
-
-            # self.critic_optimizer.zero_grad()
-            # critic_loss.backward()
-            # self.critic_optimizer.step()
-            # self.critic_scheduler.step()
-
-            # pi, log_pi, _ = self.actor.sample(state)
-
-            # qf1_pi, qf2_pi = self.critic(state, pi)
-            # min_qf_pi = torch.min(qf1_pi, qf2_pi)
-
-            # actor_loss = ((self.alpha * log_pi) - min_qf_pi).mean() # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]
-
-            # self.actor_optimizer.zero_grad()
-            # actor_loss.backward()
-            # self.actor_optimizer.step()
-            # self.actor_scheduler.step()
 
             if self.automatic_entropy_tuning:
                 alpha_loss = -(self.log_alpha * (log_pi + self.target_entropy).detach()).mean()
