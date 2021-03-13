@@ -18,7 +18,7 @@ from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import Actio
 from stable_baselines3.common.cmd_util import make_vec_env
 import shared_constants
 import algos
-
+torch.autograd.set_detect_anomaly(True)
 LOG_SIG_MAX = 2
 LOG_SIG_MIN = -5
 epsilon = 1e-6
@@ -319,12 +319,14 @@ class CQL(object):
         action, _, _ = self.actor.sample(state)
         return action.detach().cpu().numpy()[0]
     
-    def approx_logsumexp(self, q):
+    def approx_logsumexp(self, act_q):
+        q = act_q.squeeze(-1)
         func = torch.logsumexp(q / self.temp, dim=1,).mean()
-        grads = torch.grad(func, retain_graph=True)
-        ones = torch.ones((self.action_dim,self.action_dim))
-        hess_approx = 0.5*(torch.eye(self.action_dim) - (1/(self.action_dim+1))*ones*ones)
-        return func + q*grads + 0.5*q*hess_approx*torch.transpose(q)
+        q_dim = q.shape[1]
+        grads = torch.exp(q - func)
+        ones = torch.ones((q_dim,q_dim))
+        hess_approx = 0.5*(torch.eye(q_dim) - (1/(q_dim+1))*ones*ones).to(device=self.device)
+        return (func + q*grads + 0.5*torch.mm(q*q,hess_approx)).mean()
         
 
     def _get_tensor_values(self, obs, actions, network=None):
@@ -419,8 +421,11 @@ class CQL(object):
                     [q2_rand - random_density, q2_next_actions - new_log_pis.detach(), q2_curr_actions - curr_log_pis.detach()], 1
                 )
 
-            min_qf1_loss = torch.logsumexp(cat_q1 / self.temp, dim=1,).mean() * self.min_q_weight * self.temp
-            min_qf2_loss = torch.logsumexp(cat_q2 / self.temp, dim=1,).mean() * self.min_q_weight * self.temp
+            min_qf1_loss = self.approx_logsumexp(cat_q1) * self.min_q_weight * self.temp
+            min_qf2_loss = self.approx_logsumexp(cat_q2) * self.min_q_weight * self.temp
+
+            # min_qf1_loss = torch.logsumexp(cat_q1 / self.temp, dim=1,).mean() * self.min_q_weight * self.temp
+            # min_qf2_loss = torch.logsumexp(cat_q2 / self.temp, dim=1,).mean() * self.min_q_weight * self.temp
 
             """Subtract the log likelihood of data"""
             min_qf1_loss = min_qf1_loss - qf1.mean() * self.min_q_weight
