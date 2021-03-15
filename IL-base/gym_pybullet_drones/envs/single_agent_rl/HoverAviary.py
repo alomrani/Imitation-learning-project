@@ -106,6 +106,83 @@ class HoverAviary(BaseSingleAgentAviary):
         """
         return {"answer": 42} #### Calculated by the Deep Thought supercomputer in 7.5M years
 
+    def _observationSpace(self):
+        """Returns the observation space of the environment.
+
+        Returns
+        -------
+        ndarray
+            A Box() of shape (H,W,4) or (12,) depending on the observation type.
+
+        """
+        if self.OBS_TYPE == ObservationType.RGB:
+            return spaces.Dict({"state": spaces.Box(
+                                            low=np.array([-1,-1,0, -1,-1,-1, -1,-1,-1, -1,-1,-1]),
+                                            high=np.array([1,1,1, 1,1,1, 1,1,1, 1,1,1]),
+                                            dtype=np.float32
+                                        ),
+                                    "rgb": spaces.Box(low=0,
+                                            high=255,
+                                            shape=(self.IMG_RES[1], self.IMG_RES[0], 4),
+                                            dtype=np.uint8
+                                        ),
+            })
+        elif self.OBS_TYPE == ObservationType.KIN:
+            ############################################################
+            #### OBS OF SIZE 20 (WITH QUATERNION AND RPMS)
+            #### Observation vector ### X        Y        Z       Q1   Q2   Q3   Q4   R       P       Y       VX       VY       VZ       WX       WY       WZ       P0            P1            P2            P3
+            # obs_lower_bound = np.array([-1,      -1,      0,      -1,  -1,  -1,  -1,  -1,     -1,     -1,     -1,      -1,      -1,      -1,      -1,      -1,      -1,           -1,           -1,           -1])
+            # obs_upper_bound = np.array([1,       1,       1,      1,   1,   1,   1,   1,      1,      1,      1,       1,       1,       1,       1,       1,       1,            1,            1,            1])          
+            # return spaces.Box( low=obs_lower_bound, high=obs_upper_bound, dtype=np.float32 )
+            ############################################################
+            #### OBS SPACE OF SIZE 12
+            return spaces.Box(low=np.array([-1,-1,0, -1,-1,-1, -1,-1,-1, -1,-1,-1]),
+                              high=np.array([1,1,1, 1,1,1, 1,1,1, 1,1,1]),
+                              dtype=np.float32
+                              )
+            ############################################################
+        else:
+            print("[ERROR] in BaseSingleAgentAviary._observationSpace()")
+    
+    ################################################################################
+
+    def _computeObs(self):
+        """Returns the current observation of the environment.
+
+        Returns
+        -------
+        ndarray
+            A Box() of shape (H,W,4) or (12,) depending on the observation type.
+
+        """
+        if self.OBS_TYPE == ObservationType.RGB:
+            if self.step_counter%self.IMG_CAPTURE_FREQ == 0: 
+                self.rgb[0], self.dep[0], self.seg[0] = self._getDroneImages(0,
+                                                                             segmentation=False
+                                                                             )
+                #### Printing observation to PNG frames example ############
+                if self.RECORD:
+                    self._exportImage(img_type=ImageType.RGB,
+                                      img_input=self.rgb[0],
+                                      path=self.ONBOARD_IMG_PATH,
+                                      frame_num=int(self.step_counter/self.IMG_CAPTURE_FREQ)
+                                      )
+            # return np.concatenate((self.rgb[0], self.dep[0][:, :, None]), axis=2)
+            obs = self._clipAndNormalizeState(self._getDroneStateVector(0))
+
+            return {"rgb": self.rgb[0], "state": np.hstack([obs[0:3], obs[7:10], obs[10:13], obs[13:16]]).reshape(12,)}
+        elif self.OBS_TYPE == ObservationType.KIN: 
+            obs = self._clipAndNormalizeState(self._getDroneStateVector(0))
+            ############################################################
+            #### OBS OF SIZE 20 (WITH QUATERNION AND RPMS)
+            # return obs
+            ############################################################
+            #### OBS SPACE OF SIZE 12
+            return np.hstack([obs[0:3], obs[7:10], obs[10:13], obs[13:16]]).reshape(12,)
+            ############################################################
+        else:
+            print("[ERROR] in BaseSingleAgentAviary._computeObs()")
+
     ################################################################################
     
     def _clipAndNormalizeState(self,
