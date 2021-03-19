@@ -2,6 +2,7 @@
 
 ## Updates
 
+*Mar 19*- Completed Adv-CQL in `CQL.py`.   
 *Feb 28*- Completed functioning of SAC in `SAC.py`.   
 *Feb 22*- Added custom utilities to `utils.py` with CNN Policies in `DDPG.py` and `TD3.py`.   
 *Feb 18*- [`IL code base`](IL-base/) is available. Refer to README and start programming.  
@@ -21,10 +22,10 @@ A longer list of papers is available [here](https://csc2541-f18.github.io/).
 |2|Literature Review|Brainstorm Ideas, Meet with prof|:heavy_check_mark:|
 |3|Formulate Problem|Setup the problem with potential solutions|:heavy_check_mark:|
 |4|Implement Toy Problem|Solve base case and gain intuition|:heavy_check_mark:|
-|5|Implement Toy Problem|Complete base case solution and interpret results| - |
-|6|Implement Algorithm|Solve main problem| - |
-|7|Implement Algorithm|Solve main problem| - |
-|9|Accumulate Results|Interpret and finalize results| - |
+|5|Implement Toy Problem|Complete base case solution and interpret results|:heavy_check_mark:|
+|6|Implement Algorithm|Solve main problem|:heavy_check_mark:|
+|7|Implement Algorithm|Solve main problem|:heavy_check_mark:|
+|9|Accumulate Results|Interpret and finalize results|:heavy_check_mark:|
 |10|Write Report|Draft and finalize report| - |
 |11|Wrap Project|Package code base and wrap ppt| - |
 
