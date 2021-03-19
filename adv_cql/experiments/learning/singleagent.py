@@ -1,12 +1,4 @@
 """Learning script for single agent problems.
-
-
-Example
--------
-To run the script, type in a terminal:
-
-    $ python singleagent.py --env <env> --algo <alg> --obs <ObservationType> --act <ActionType> --cpu <cpu_num>
-
 """
 import os
 os.environ['OMP_NUM_THREADS'] = '1'
@@ -28,7 +20,7 @@ import algos
 
 from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
 from gym_pybullet_drones.envs.single_agent_rl.HoverAviary import HoverAviary
-from gym_pybullet_drones.envs.single_agent_rl.ZigZagAviary import ZigZagAviary
+# from gym_pybullet_drones.envs.single_agent_rl.ZigZagAviary import ZigZagAviary
 from gym_pybullet_drones.envs.single_agent_rl.FlyThruGateAviary import FlyThruGateAviary
 from gym_pybullet_drones.envs.single_agent_rl.TuneAviary import TuneAviary
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ActionType, ObservationType
