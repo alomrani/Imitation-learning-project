@@ -78,11 +78,6 @@ class ActorCNN(nn.Module):
 
         self.apply(weights_init_)
 
-        # action rescaling
-        # if action_space is None:
-        #     self.action_scale = torch.tensor(1.)
-        #     self.action_bias = torch.tensor(0.)
-        # else:
         self.action_scale = torch.tensor(
             1.)
         self.action_bias = torch.tensor(
@@ -158,11 +153,6 @@ class Actor(nn.Module):
 
         self.apply(weights_init_)
 
-        # action rescaling
-        # if action_space is None:
-        #     self.action_scale = torch.tensor(1.)
-        #     self.action_bias = torch.tensor(0.)
-        # else:
         self.action_scale = torch.tensor(
             1.)
         self.action_bias = torch.tensor(
@@ -284,7 +274,7 @@ class ADV_CQL(object):
             self.expert= SACActor(state_dim, self.action_dim).to(self.device)
             self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_kin"))
         else:
-            self.state_dim = 4 #train_env.observation_space.shape[2]
+            self.state_dim = 4
             self.train_env = algos.utils.Normalize(self.train_env)
             self.actor = Actor(state_dim, self.action_dim).to(self.device)
             self.critic = Critic(state_dim, self.action_dim).to(device=self.device)
@@ -292,11 +282,8 @@ class ADV_CQL(object):
             self.expert= SACActorCNN(state_dim, self.action_dim).to(self.device)
             self.expert.load_state_dict(torch.load("experts/"+self.args.env+"_rgb"))
 
-        # decay_lr = lambda epoch: 0.9999
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=self.args.lr)
-        # self.actor_scheduler = torch.optim.lr_scheduler.MultiplicativeLR(self.actor_optimizer, lr_lambda=decay_lr)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=self.args.lr)
-        # self.critic_scheduler = torch.optim.lr_scheduler.MultiplicativeLR(self.critic_optimizer, lr_lambda=decay_lr)
 
         self.critic_target = copy.deepcopy(self.critic)
         self.var_obj = Variational(self.args, self.actor, state_dim, action_dim)
@@ -328,7 +315,6 @@ class ADV_CQL(object):
         hess_approx = 0.5*(torch.eye(q_dim) - (1/(q_dim+1))*ones*ones).to(device=self.device)
         return (func + q*grads + 0.5*torch.mm(q*q,hess_approx)).mean()
         
-
     def _get_tensor_values(self, obs, actions, network=None):
         action_shape = actions.shape[0]
         obs_shape = obs.shape[0]
@@ -340,9 +326,6 @@ class ADV_CQL(object):
     def _get_policy_actions(self, obs, num_actions, network=None):
         obs_temp = obs.unsqueeze(1).repeat(1, num_actions, 1).view(obs.shape[0] * num_actions, obs.shape[1])
         new_obs_actions, new_obs_log_pi, _ = network.sample(obs_temp)
-        # if not self.discrete:
-        #     return new_obs_actions, new_obs_log_pi.view(obs.shape[0], num_actions, 1)
-        # else:
         return new_obs_actions, new_obs_log_pi.view(obs.shape[0], num_actions, 1)
 
     def collect_data(self, replay_buffer):
@@ -392,7 +375,7 @@ class ADV_CQL(object):
                 alpha_loss = torch.tensor(0.).to(self.device)
 
             ## add CQL
-            random_actions_tensor = torch.FloatTensor(qf2.shape[0] * self.num_random, self.action_dim).uniform_(-1, 1) # .cuda()
+            random_actions_tensor = torch.FloatTensor(qf2.shape[0] * self.num_random, self.action_dim).uniform_(-1, 1)
             curr_actions_tensor, curr_log_pis = self._get_policy_actions(state, num_actions=self.num_random, network=self.actor)
             new_curr_actions_tensor, new_log_pis = self._get_policy_actions(next_state, num_actions=self.num_random, network=self.actor)
             q1_rand, q2_rand = self._get_tensor_values(state, random_actions_tensor, network=self.critic)
@@ -421,11 +404,12 @@ class ADV_CQL(object):
                     [q2_rand - random_density, q2_next_actions - new_log_pis.detach(), q2_curr_actions - curr_log_pis.detach()], 1
                 )
 
-            min_qf1_loss = self.approx_logsumexp(cat_q1) * self.min_q_weight * self.temp
-            min_qf2_loss = self.approx_logsumexp(cat_q2) * self.min_q_weight * self.temp
+            # # bohning approximation as an upper bound on logsumexp
+            # min_qf1_loss = self.approx_logsumexp(cat_q1) * self.min_q_weight * self.temp
+            # min_qf2_loss = self.approx_logsumexp(cat_q2) * self.min_q_weight * self.temp
 
-            # min_qf1_loss = torch.logsumexp(cat_q1 / self.temp, dim=1,).mean() * self.min_q_weight * self.temp
-            # min_qf2_loss = torch.logsumexp(cat_q2 / self.temp, dim=1,).mean() * self.min_q_weight * self.temp
+            min_qf1_loss = torch.logsumexp(cat_q1 / self.temp, dim=1,).mean() * self.min_q_weight * self.temp
+            min_qf2_loss = torch.logsumexp(cat_q2 / self.temp, dim=1,).mean() * self.min_q_weight * self.temp
 
             """Subtract the log likelihood of data"""
             min_qf1_loss = min_qf1_loss - qf1.mean() * self.min_q_weight
@@ -452,17 +436,6 @@ class ADV_CQL(object):
             """
             Update networks
             """
-            # Update the Q-functions iff 
-            # self._num_q_update_steps += 1
-            # self.qf1_optimizer.zero_grad()
-            # qf1_loss.backward(retain_graph=True)
-            # self.qf1_optimizer.step()
-
-            # self.qf2_optimizer.zero_grad()
-            # qf2_loss.backward(retain_graph=True)
-            # self.qf2_optimizer.step()
-
-            # self._num_policy_update_steps += 1
             pi, log_pi, _ = self.actor.sample(state)
 
             qf1_pi, qf2_pi = self.critic(state, pi)
@@ -477,13 +450,6 @@ class ADV_CQL(object):
             """
             Soft Updates
             """
-            # ptu.soft_update_from_to(
-            #     self.qf1, self.target_qf1, self.soft_target_tau
-            # )
-            # if self.num_qs > 1:
-            #     ptu.soft_update_from_to(
-            #         self.qf2, self.target_qf2, self.soft_target_tau
-            #     )
 
             if self.total_it % self.target_update_interval == 0:
                 for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
