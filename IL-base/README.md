@@ -1,4 +1,4 @@
-## Advice-based Conservative Q-Learning
+## Advice-based Conservative Q-Learning (Adv-CQL)
 
 This repository contains the original implementation for _No Imitation for Me: Advice-based Offline Reinforcement Learning for Aerial Control_. Code is based on the [Gym-Pybullet-Drones](https://github.com/utiasDSL/gym-pybullet-drones) framework.  
 
@@ -11,17 +11,15 @@ setup.sh
 
 ## Usage
 
-Our project is implemented using the [`singleagent.py`](experiments/learning/singleagent.py) file. This is a common file which will run all our implementations upon integration. 
+Adv-CQL resides in the [`ADV_CQL.py`](experiments/learning/algos/ADV.py) file. The [`singleagent.py`](experiments/learning/singleagent.py) file runs experiments and saves results in the ['results'](experiments/learning/results/) folder.  
 
-To run an `SAC` agent on the `takeoff` task with `rgb` images use the following-
+To run an `ADV_CQL` agent on the `takeoff` task with `kin` states use the following-
 
 ```
-python singleagent.py --configs SAC --env takeoff --obs rgb
+python singleagent.py --configs ADV_CQL --env takeoff --obs kin
 ```
 
-This will train the agent for `1e5` timesteps and save results in the [`results`](experiments/learning/results) folder. 
-
-The default settings will train a `SAC` agent on the `hover` task with `kin` feature inputs as per the following-
+This will train the agent for `2e5` timesteps. Default settings train an `SAC` agent on the `hover` task with `kin` feature inputs as per the following-
 
 ```
 python singleagent.py
