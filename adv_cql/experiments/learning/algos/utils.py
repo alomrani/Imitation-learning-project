@@ -170,7 +170,6 @@ class Base():
 		proj_matrix = pb.computeProjectionMatrixFOV(
 			fov=90, aspect=float(_render_width)/_render_height,
 			nearVal=0.01, farVal=100.0)
-		#proj_matrix=[1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, -1.0000200271606445, -1.0, 0.0, 0.0, -0.02000020071864128, 0.0]
 		(_, _, px, _, _) = pb.getCameraImage(
 			width=_render_width, height=_render_height, viewMatrix=view_matrix,
 			projectionMatrix=proj_matrix, renderer=pb.ER_TINY_RENDERER) #ER_BULLET_HARDWARE_OPENGL)
@@ -210,7 +209,6 @@ class Normalize():
 		r, g, b, a = rgb[:,:,:,0], rgb[:,:,:,1], rgb[:,:,:,2], rgb[:,:,:,3]
 		gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
 		return np.expand_dims(gray, axis=-1)
-		# return np.concatenate((np.expand_dims(gray,axis=-1),np.expand_dims(a,axis=-1)), axis=3)
 
 	def reset(self):
 		self.state = self.rgb2gray(self.inp.reset())
@@ -244,7 +242,6 @@ class Normalize():
 		proj_matrix = pb.computeProjectionMatrixFOV(
 			fov=90, aspect=float(_render_width)/_render_height,
 			nearVal=0.01, farVal=100.0)
-		#proj_matrix=[1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, -1.0000200271606445, -1.0, 0.0, 0.0, -0.02000020071864128, 0.0]
 		(_, _, px, _, _) = pb.getCameraImage(
 			width=_render_width, height=_render_height, viewMatrix=view_matrix,
 			projectionMatrix=proj_matrix, renderer=pb.ER_TINY_RENDERER) #ER_BULLET_HARDWARE_OPENGL)

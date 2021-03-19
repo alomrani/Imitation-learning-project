@@ -64,11 +64,6 @@ class ActorCNN(nn.Module):
 
         self.apply(weights_init_)
 
-        # action rescaling
-        # if action_space is None:
-        #     self.action_scale = torch.tensor(1.)
-        #     self.action_bias = torch.tensor(0.)
-        # else:
         self.action_scale = torch.tensor(
             1.)
         self.action_bias = torch.tensor(
@@ -144,11 +139,6 @@ class Actor(nn.Module):
 
         self.apply(weights_init_)
 
-        # action rescaling
-        # if action_space is None:
-        #     self.action_scale = torch.tensor(1.)
-        #     self.action_bias = torch.tensor(0.)
-        # else:
         self.action_scale = torch.tensor(
             1.)
         self.action_bias = torch.tensor(
@@ -244,11 +234,8 @@ class SAC(object):
             self.critic = CriticCNN(state_dim, action_dim).to(self.device)
             self.actor.encoder.copy_conv_weights_from(self.critic.encoder)
 
-        # decay_lr = lambda epoch: 0.9999
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=self.args.lr)
-        # self.actor_scheduler = torch.optim.lr_scheduler.MultiplicativeLR(self.actor_optimizer, lr_lambda=decay_lr)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=self.args.lr)
-        # self.critic_scheduler = torch.optim.lr_scheduler.MultiplicativeLR(self.critic_optimizer, lr_lambda=decay_lr)
 
         self.critic_target = copy.deepcopy(self.critic)
 
@@ -282,7 +269,6 @@ class SAC(object):
             self.critic_optimizer.zero_grad()
             critic_loss.backward()
             self.critic_optimizer.step()
-            # self.critic_scheduler.step()
 
             pi, log_pi, _ = self.actor.sample(state)
 
@@ -294,7 +280,6 @@ class SAC(object):
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
             self.actor_optimizer.step()
-            # self.actor_scheduler.step()
 
             if self.automatic_entropy_tuning:
                 alpha_loss = -(self.log_alpha * (log_pi + self.target_entropy).detach()).mean()

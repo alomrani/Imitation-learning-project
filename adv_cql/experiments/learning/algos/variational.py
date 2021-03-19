@@ -64,11 +64,6 @@ class ActorCNN(nn.Module):
 
         self.apply(weights_init_)
 
-        # action rescaling
-        # if action_space is None:
-        #     self.action_scale = torch.tensor(1.)
-        #     self.action_bias = torch.tensor(0.)
-        # else:
         self.action_scale = torch.tensor(
             1.)
         self.action_bias = torch.tensor(
@@ -115,11 +110,6 @@ class Actor(nn.Module):
 
         self.apply(weights_init_)
 
-        # action rescaling
-        # if action_space is None:
-        #     self.action_scale = torch.tensor(1.)
-        #     self.action_bias = torch.tensor(0.)
-        # else:
         self.action_scale = torch.tensor(
             1.)
         self.action_bias = torch.tensor(
