@@ -1,5 +1,7 @@
 ## Advice-based Conservative Q-Learning (Adv-CQL)
 
+Karush Suri, Mhd Ali Alomrani, Reza Moravej  
+
 This repository contains the original implementation for _No Imitation for Me: Advice-based Offline Reinforcement Learning for Aerial Control_. Code is based on the [Gym-Pybullet-Drones](https://github.com/utiasDSL/gym-pybullet-drones) framework.  
 
 ## Requirements
@@ -11,7 +13,7 @@ setup.sh
 
 ## Usage
 
-Adv-CQL resides in the [`ADV_CQL.py`](experiments/learning/algos/ADV.py) file. The [`singleagent.py`](experiments/learning/singleagent.py) file runs experiments and saves results in the ['results'](experiments/learning/results/) folder.  
+Adv-CQL resides in the [`ADV_CQL.py`](experiments/learning/algos/ADV.py) file. The [`singleagent.py`](experiments/learning/singleagent.py) file runs experiments and saves results in the [`results`](experiments/learning/results/) folder.  
 
 To run an `ADV_CQL` agent on the `takeoff` task with `kin` states use the following-
 
@@ -25,18 +27,17 @@ This will train the agent for `2e5` timesteps. Default settings train an `SAC` a
 python singleagent.py
 ```
 
-Custom implementations can be trained using config files in their respective directories in the `config` folder.  
-
+RL agent implementations can be found in the [`algos`](experiments/learning/algos/) folder with their configurations in the [`config`](experiments/learning/configs/) folder. Additionally, expert weights can be found in the [`experts`](experiments/learning/experts/) folder.  
 
 ## Development 
 
 So what is a good place to start your work? Have a look at the following-  
 
-* `algos`- Follow a similar line of coding as in the `algos` folder as this will lead to easier integration and faster progress.  
-* `configs`- Make sure that your arguments are clean and tuned. A `configs.yaml` is a great way to tune your parameters.
-* New files- Incase you wish to make a new file for your code, then please do so in the `algos` folder. This will keep the directory consistent.  
-
-
-
+|Directory|Description|Use Case|
+|:-------:|:---------:|:------:|
+|[`algos`](experiments/learning/algos/)|RL agents|Design custom agents|
+|[`configs`](experiments/learning/configs/)|Agent configs|Set/tune custom configs|
+|[`experts`](experiments/learning/experts/)|Expert weights|Add new experts|
+|[`single_agent_rl`](gym_pybullet_drones/envs/single_agent_rl/)|Drone control envs|Add custom envs|
 
 
