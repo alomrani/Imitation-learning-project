@@ -2,7 +2,7 @@
 
 Karush Suri, Mhd Ali Alomrani, Reza Moravej  
 
-<center><img src="files/readme_images/adv_cql.gif" height="200px" width="500px"></img></center>
+<p align="center"><img src="files/readme_images/adv_cql.gif" height="225px" width="500px"></img></p>
 
 This repository contains the original implementation for _No Imitation for Me: Advice-based Offline Reinforcement Learning for Aerial Control_. Code is based on the [Gym-Pybullet-Drones](https://github.com/utiasDSL/gym-pybullet-drones) framework.  
 
