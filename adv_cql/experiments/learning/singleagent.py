@@ -14,23 +14,19 @@ from PIL import Image
 import numpy as np
 import torch
 from stable_baselines3.common.env_checker import check_env
-from stable_baselines3.common.cmd_util import make_vec_env # Module cmd_util will be renamed to env_util https://github.com/DLR-RM/stable-baselines3/pull/197
+from stable_baselines3.common.cmd_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecTransposeImage
 import algos
 
 from gym_pybullet_drones.envs.single_agent_rl.TakeoffAviary import TakeoffAviary
 from gym_pybullet_drones.envs.single_agent_rl.HoverAviary import HoverAviary
-# from gym_pybullet_drones.envs.single_agent_rl.ZigZagAviary import ZigZagAviary
+from gym_pybullet_drones.envs.single_agent_rl.ZigZagAviary import ZigZagAviary
 from gym_pybullet_drones.envs.single_agent_rl.FlyThruGateAviary import FlyThruGateAviary
 from gym_pybullet_drones.envs.single_agent_rl.TuneAviary import TuneAviary
 from gym_pybullet_drones.envs.single_agent_rl.BaseSingleAgentAviary import ActionType, ObservationType
 
 import shared_constants
-# import torch.multiprocessing as mp
-# mp.set_start_method('spawn',force=True)
 
-os.sched_setaffinity(os.getpid(), {0})
-os.system("taskset -p 0xffffffffffffffffffffffff %d" % os.getpid())
 
 EPISODE_REWARD_THRESHOLD = -0 # Upperbound: rewards are always negative, but non-zero
 """float: Reward threshold to halt the script."""
@@ -111,7 +107,6 @@ if __name__ == "__main__":
 
     env_name = ARGS.env+"-aviary-v0"
     sa_env_kwargs = dict(aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act)
-    # train_env = gym.make(env_name, aggregate_phy_steps=shared_constants.AGGR_PHY_STEPS, obs=ARGS.obs, act=ARGS.act) # single environment instead of a vectorized one    
     if env_name == "takeoff-aviary-v0":
         train_env_name = TakeoffAviary
 
@@ -134,13 +129,12 @@ if __name__ == "__main__":
                                 )
     print("[INFO] Action space:", train_env.action_space)
     print("[INFO] Observation space:", train_env.observation_space)
-    # check_env(train_env, warn=True, skip_render_check=True)
 
     if ARGS.obs== ObservationType.KIN:
         state_dim = train_env.observation_space.shape[0]
         train_env = algos.utils.Base(train_env)
     else:
-        state_dim = 4#train_env.observation_space.shape[2]
+        state_dim = 4
         train_env = algos.utils.Normalize(train_env)
     action_dim = train_env.action_space.shape[0] 
     max_action = float(train_env.action_space.high[0])
@@ -164,7 +158,7 @@ if __name__ == "__main__":
         policy_file = filename if ARGS.load_model == "default" else ARGS.load_model
         model.load(policy_file)
 
-    replay_buffer = algos.utils.ReplayBuffer(train_env.observation_space.shape, action_dim, 100000) #ARGS.max_timesteps
+    replay_buffer = algos.utils.ReplayBuffer(train_env.observation_space.shape, action_dim, 100000)
 
     # Evaluate untrained policy
     evaluations = [eval_policy(model, train_env, ARGS.seed)]
@@ -191,7 +185,7 @@ if __name__ == "__main__":
 
         # Perform action
         next_state, reward, done, _ = train_env.step(action) 
-        done_bool = float(done) #float(done) if episode_timesteps < train_env._max_episode_steps else 0
+        done_bool = float(done)
 
         # Store data in replay buffer
         if ARGS.configs != 'IL' and ARGS.configs != 'CQL':
@@ -205,7 +199,6 @@ if __name__ == "__main__":
             actor_loss, critic_loss = model.train(replay_buffer, ARGS.batch_size)
 
         if done: 
-            # +1 to account for 0 indexing. +0 on ep_timesteps since it will increment +1 even if done=True
             print(f"Total T: {t+1} Episode Num: {episode_num+1} Episode T: {episode_timesteps} Reward: {episode_reward}")
             # Reset environment
             logger.log_episode(episode_reward, actor_loss, critic_loss)
