@@ -2,7 +2,7 @@
 
 ## Updates
 
-*Mar 19*- Completed Adv-CQL in `CQL.py`.   
+*Mar 19*- Completed Adv-CQL in `ADV_CQL.py`.   
 *Feb 28*- Completed functioning of SAC in `SAC.py`.   
 *Feb 22*- Added custom utilities to `utils.py` with CNN Policies in `DDPG.py` and `TD3.py`.   
 *Feb 18*- [`IL code base`](IL-base/) is available. Refer to README and start programming.  
