@@ -2,6 +2,7 @@ import os
 from sys import platform
 import time
 import collections
+import random
 from datetime import datetime
 from enum import Enum
 import xml.etree.ElementTree as etxml
@@ -293,6 +294,8 @@ class BaseAviary(gym.Env):
             in each subclass for its format.
 
         """
+        if self.step_counter/self.SIM_FREQ>=0.7 and self.step_counter%10==0 and self.step_counter/self.SIM_FREQ<2.2: p.loadURDF("duck_vhacd.urdf", [0+random.gauss(0, 0.3),-0.5+random.gauss(0, 0.3),3], p.getQuaternionFromEuler([random.randint(0,360),random.randint(0,360),random.randint(0,360)]), physicsClientId=self.getPyBulletClient())
+
         #### Save PNG video frames if RECORD=True and GUI=False ####
         if self.RECORD and not self.GUI and self.step_counter%self.CAPTURE_FREQ == 0:
             [w, h, rgb, dep, seg] = p.getCameraImage(width=self.VID_WIDTH,
