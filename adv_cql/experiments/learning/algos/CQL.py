@@ -1,5 +1,7 @@
 import copy
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -389,6 +391,12 @@ class CQL(object):
 
             min_qf1_loss = torch.logsumexp(cat_q1 / self.temp, dim=1,).mean() * self.min_q_weight * self.temp
             min_qf2_loss = torch.logsumexp(cat_q2 / self.temp, dim=1,).mean() * self.min_q_weight * self.temp
+
+            # print(reward.detach().cpu().numpy().shape)
+            # print(torch.logsumexp(cat_q1 / self.temp, dim=1,).detach().cpu().numpy().shape)
+            # sns.kdeplot(reward.detach().cpu().numpy()[:,0], torch.logsumexp(cat_q1 / self.temp, dim=1,).detach().cpu().numpy()[:,0], x="reward", y="lse(Q)", cmap="mako", fill=True, thresh=0, levels=100)
+            # plt.axis('off')
+            # plt.savefig(str(self.total_it)+'.png')
 
             """Subtract the log likelihood of data"""
             min_qf1_loss = min_qf1_loss - qf1.mean() * self.min_q_weight
