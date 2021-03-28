@@ -394,7 +394,7 @@ class CQL(object):
 
             # print(reward.detach().cpu().numpy().shape)
             # print(torch.logsumexp(cat_q1 / self.temp, dim=1,).detach().cpu().numpy().shape)
-            # sns.kdeplot(reward.detach().cpu().numpy()[:,0], torch.logsumexp(cat_q1 / self.temp, dim=1,).detach().cpu().numpy()[:,0], x="reward", y="lse(Q)", cmap="mako", fill=True, thresh=0, levels=100)
+            # sns.kdeplot(reward.detach().cpu().numpy()[:,0], torch.logsumexp(cat_q1 / self.temp, dim=1,).detach().cpu().numpy()[:,0], x="reward", y="lse(Q)", cmap="rocket", fill=True, thresh=0, levels=100)
             # plt.axis('off')
             # plt.savefig(str(self.total_it)+'.png')
 
